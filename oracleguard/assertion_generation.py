@@ -69,7 +69,22 @@ class OpenAIProvider(LLMProvider):
             max_retries: Max retry attempts on rate limit or transient errors.
             call_interval: Min seconds between API calls (rate limiter).
         """
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+        if api_key:
+            self.api_key = api_key
+        elif base_url and 'openrouter' in (base_url or ''):
+            self.api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
+        elif base_url and 'groq' in (base_url or ''):
+            self.api_key = os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY")
+        elif base_url and 'sambanova' in (base_url or ''):
+            self.api_key = os.getenv("SAMBANOVE_API_KEY") or os.getenv("SAMBANOVA_API_KEY")
+        elif base_url and 'cohere' in (base_url or ''):
+            self.api_key = os.getenv("COHERE_API_KEY")
+        elif base_url and 'nvidia' in (base_url or ''):
+            self.api_key = os.getenv("NVIDIA_API_KEY")
+        elif base_url and 'google' in (base_url or ''):
+            self.api_key = os.getenv("GEMINI_API_KEY")
+        else:
+            self.api_key = os.getenv("OPENAI_API_KEY")
         self.model = model
         self.base_url = base_url
         self.max_retries = max_retries
@@ -107,7 +122,7 @@ class OpenAIProvider(LLMProvider):
                     model=self.model,
                     messages=[{"role": "user", "content": full_prompt}],
                     temperature=0.7,
-                    max_tokens=1000,
+                    max_tokens=2000,
                 )
                 self._last_call = time.time()
                 content = response.choices[0].message.content
@@ -223,7 +238,7 @@ Generate 2-4 appropriate assertions. Consider:
   ]
 }}
 
-Provide ONLY the JSON response, no additional text.
+IMPORTANT: Keep assertion code simple (no f-strings, no multiline). Provide ONLY the JSON response, no additional text.
 """
 
     def _parse_response(self, response: str) -> List[CandidateAssertion]:
@@ -254,6 +269,11 @@ Provide ONLY the JSON response, no additional text.
 
         try:
             data = json.loads(text)
+        except json.JSONDecodeError:
+            # Try to repair truncated JSON by finding complete assertion objects
+            data = self._repair_truncated_json(text)
+
+        if data:
             return [
                 CandidateAssertion(
                     assertion_code=item.get('code', ''),
@@ -263,9 +283,26 @@ Provide ONLY the JSON response, no additional text.
                     metadata={},
                 )
                 for item in data.get('assertions', [])
+                if item.get('code')
             ]
-        except json.JSONDecodeError:
-            return self._fallback_parse(text)
+        return self._fallback_parse(text)
+
+    @staticmethod
+    def _repair_truncated_json(text: str) -> Optional[dict]:
+        """Try to extract complete assertion objects from truncated JSON."""
+        import re
+        # Find all complete {...} assertion blocks
+        blocks = re.findall(
+            r'\{\s*"code"\s*:\s*"[^"]*"\s*,\s*"explanation"\s*:\s*"[^"]*"\s*,'
+            r'\s*"confidence"\s*:\s*[\d.]+\s*,\s*"type"\s*:\s*"[^"]*"\s*\}',
+            text
+        )
+        if blocks:
+            try:
+                return {"assertions": [json.loads(b) for b in blocks]}
+            except json.JSONDecodeError:
+                pass
+        return None
 
     def _fallback_parse(self, text: str) -> List[CandidateAssertion]:
         return [
