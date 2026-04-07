@@ -227,14 +227,30 @@ Provide ONLY the JSON response, no additional text.
 """
 
     def _parse_response(self, response: str) -> List[CandidateAssertion]:
-        """Parse LLM response into structured assertions."""
+        """Parse LLM response into structured assertions.
+
+        Handles reasoning models that wrap output in <think>...</think> tags,
+        and code fences around JSON.
+        """
         text = response.strip()
+
+        # Strip reasoning model thinking tags (DeepSeek R1, Qwen3, etc.)
+        import re
+        text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
+
+        # Strip markdown code fences
         for prefix in ("```json", "```"):
             if text.startswith(prefix):
                 text = text[len(prefix):]
         if text.endswith("```"):
             text = text[:-3]
         text = text.strip()
+
+        # If still no JSON, try to extract it from surrounding text
+        if not text.startswith('{'):
+            match = re.search(r'\{.*"assertions".*\}', text, flags=re.DOTALL)
+            if match:
+                text = match.group(0)
 
         try:
             data = json.loads(text)
