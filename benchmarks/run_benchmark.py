@@ -114,11 +114,13 @@ class BenchmarkSummary:
 
 def _create_provider(llm: str, model: Optional[str] = None,
                      base_url: Optional[str] = None,
-                     call_interval: float = 0.0):
+                     call_interval: float = 0.0,
+                     api_key: Optional[str] = None):
     """Create an LLM provider from CLI args."""
     from oracleguard import OpenAIProvider
     if llm == 'openai':
         return OpenAIProvider(
+            api_key=api_key,
             model=model or 'gpt-4',
             base_url=base_url,
             call_interval=call_interval,
@@ -450,6 +452,8 @@ def main():
     parser.add_argument("--call-interval", type=float,
                         default=float(os.getenv("LLM_CALL_INTERVAL", "4")),
                         help="Min seconds between API calls (env: LLM_CALL_INTERVAL)")
+    parser.add_argument("--api-key",
+                        help="API key (overrides env vars)")
     parser.add_argument("--mutants", type=int, default=15,
                         help="Mutants per test case (default: 15)")
     parser.add_argument("--faults", type=int, default=10,
@@ -463,6 +467,7 @@ def main():
         args.llm, args.model,
         base_url=args.base_url,
         call_interval=args.call_interval,
+        api_key=args.api_key,
     )
 
     print(f"Loading HumanEval+ problems (limit={limit or 'all'})...")

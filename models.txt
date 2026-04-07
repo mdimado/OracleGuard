@@ -1,9 +1,0 @@
-qwen/qwen3.6-plus:free
-minimax/minimax-m2.5:free
-liquid/lfm-2.5-1.2b-thinking:free
-nvidia/nemotron-3-nano-30b-a3b:free
-arcee-ai/trinity-mini:free
-openai/gpt-oss-20b:free
-z-ai/glm-4.5-air:free
-google/gemma-3-4b-it:free
-meta-llama/llama-3.2-3b-instruct:free
