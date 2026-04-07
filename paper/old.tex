@@ -1,0 +1,417 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{xurl}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{cite}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\title{OracleGuard: Trust-Scored LLM-Based Test Oracle Generation\\with Differential Validation}
+
+\author{
+  \IEEEauthorblockN{Anonymous Author(s)}
+  \IEEEauthorblockA{Anonymous Institution\\
+  Anonymous City, Country\\
+  anonymous@email.com}
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Ask any developer what slows down their test suite and you will hear the same answer: writing assertions is tedious, error-prone, and never quite finished. Automated tools have largely solved the input side of testing—fuzzers, symbolic engines, and search-based generators now produce inputs at scale. But deciding whether a program's output is actually \emph{correct}? That still falls on the human. It requires knowing what the code was supposed to do, which is harder to capture than it sounds.
+
+Large Language Models have changed the calculus somewhat. Feed a function to a modern LLM and it will propose reasonable-looking assertions within seconds. The trouble is that ``reasonable-looking'' and ``correct'' are not synonyms. We have seen models assert the wrong return type, miss an off-by-one, and confidently check a condition that the code never actually enforces. Trusting those outputs blindly is asking for trouble.
+
+OracleGuard takes a different position: treat every generated assertion as a hypothesis, not a fact. Before any oracle gets accepted, it goes through a gauntlet—mutation-based fault injection across six operator classes, a multi-metric trust score, and a refinement pass that pinpoints exactly what each failing mutant reveals. The result is a five-stage pipeline that turns LLM output into something you can actually rely on.
+\end{abstract}
+
+\begin{IEEEkeywords}
+test oracle generation, large language models, mutation testing, differential testing, AI-assisted software engineering, automated testing, trust scoring
+\end{IEEEkeywords}
+
+% -------------------------------------------------
+\section{Introduction}
+
+\subsection{Why Oracles Are Hard}
+
+Writing a test input is the easy part. Writing the assertion that says ``and this result means the function worked correctly''—that is where developers slow down and, often, give up. The research community calls this the oracle problem~\cite{barr2015oracle}, and it has been around long enough that we should not expect a simple fix~\cite{molina2025test,pezze2014automated}.
+
+The difficulty is not laziness or lack of tooling. It is fundamental. A test oracle must encode \emph{intent}—what the function was supposed to do under this specific input—and intent lives in the programmer's head, not in the source code. Four concrete problems follow from this:
+
+\begin{itemize}
+\item Capturing full behavioral intent takes time that sprints do not budget for.
+\item Edge cases and implicit contracts go unspecified because no one thinks to write them down.
+\item Six months later the code changes, the old assertions break, and nobody is sure whether that is a bug or an expected update.
+\item Half the specification was never written anywhere. It existed as shared understanding among the team.
+\end{itemize}
+
+None of these problems are solved by generating more test inputs. They require help at the oracle level.
+
+\subsection{What LLMs Can and Cannot Do}
+
+Modern LLMs—GPT-4, Claude, and similar models—read code remarkably well~\cite{jiang2024survey_codellm,davis2024understanding_llm_code}. Given a function body and its docstring, they produce syntactically correct assertions at a rate that would take a human much longer~\cite{xu2022systematic}. Systems like ChatAssert~\cite{hayet2024chatassert} and TOGLL~\cite{hossain2024togll} have demonstrated this at scale, and the results are genuinely impressive.
+
+But there are three failure modes that matter for testing work specifically:
+
+\begin{itemize}
+\item Models hallucinate. Not occasionally—regularly. An assertion can look completely plausible and still check the wrong value, the wrong type, or a condition the function never actually guarantees.
+\item Run the same prompt twice and you may get two different assertion sets. Neither is obviously wrong. Both cannot be right.
+\item There is no verification built in. The model has no way to run the code. It is pattern-matching on training data, and training data does not cover every function you will ever write.
+\end{itemize}
+
+TOGLL~\cite{hossain2024togll} addressed the generation quality problem through fine-tuning and prompt engineering. That work is important and its results hold up. What it does not address is the per-oracle question: given \emph{this specific assertion}, should I trust it? Aggregate accuracy on a benchmark is cold comfort when a single wrong oracle silently masks a regression in production~\cite{bodicoat2025understanding,xiong2023express_confidence}.
+
+\subsection{What OracleGuard Does}
+
+OracleGuard does not try to build a better generator. It builds a better \emph{acceptance mechanism}. The LLM proposes; the framework decides.
+
+Five contributions follow from this design:
+
+\begin{enumerate}
+\item A hybrid pipeline that wraps LLM generation inside mutation-driven validation—six operator classes, subprocess-isolated execution, kill/survive outcomes per mutant.
+\item A trust score that combines mutation kill rate, model confidence, behavioral consistency, coverage, and complexity into a single normalized value.
+\item A refinement engine that reads surviving mutant patterns and tells you exactly what assertion class is missing.
+\item Five independent pipeline stages, each with typed inputs and outputs, so any stage can be swapped, studied, or replayed in isolation.
+\item No dependency on fine-tuning or task-specific training. Any LLM that returns JSON works.
+\end{enumerate}
+
+The positioning relative to TOGLL~\cite{hossain2024togll} is deliberate. Generation-focused and validation-focused systems are not competing—they are complementary. A fine-tuned generator makes better candidates; a validation layer decides which candidates to keep. OracleGuard is the second half of that pair~\cite{liu2024uncertainty_estimation}.
+
+% -------------------------------------------------
+\section{Background and Related Work}
+
+\subsection{The Oracle Problem in Context}
+
+Formally, a test oracle is a predicate over input-output pairs: given this input, does this output mean the program is behaving correctly~\cite{barr2015oracle,pezze2014automated}? That definition sounds clean. In practice it is not. The predicate has to come from somewhere, and ``somewhere'' usually means a human writing assertions by hand.
+
+Five oracle strategies appear in the literature:
+
+\begin{itemize}
+\item Assertion-based: executable checks embedded directly in tests. Most common, most brittle.
+\item Contract-based: pre/postconditions and invariants. Formal and precise when specifications exist; useless when they do not.
+\item Metamorphic: instead of expected values, check consistency across related inputs~\cite{segura2016metamorphic,chen2018metamorphic}. Sidesteps the ``what is the right answer'' question neatly.
+\item Differential: run two implementations and compare. Requires a reference implementation.
+\item Trace-based: classify execution patterns. Works well in specific domains; hard to generalize.
+\end{itemize}
+
+None of these eliminates the oracle problem. They each shift where the human effort lands.
+
+\subsection{LLMs Applied to Oracle Generation}
+
+The natural experiment—ask an LLM to write the assertions—has been tried systematically. TOGLL~\cite{hossain2024togll} is the most thorough study: fine-tuned code LLMs with structured prompts outperformed TOGA~\cite{dinella2022toga} on both mutant and real-bug detection. Doc2OraclLLM~\cite{hossain2025doc2oracll} extended this to Javadoc-driven synthesis. ChatAssert~\cite{hayet2024chatassert} demonstrated multi-model consensus. REST API oracle generation has been attempted via OpenAPI specifications.
+
+What these systems share is a focus on making the generation step better. What they share less is a systematic answer to what happens when the generation step produces something wrong—which it does, with a frequency that should give practitioners pause~\cite{bodicoat2025understanding}.
+
+\subsection{Mutation Testing as a Quality Signal}
+
+Mutation testing~\cite{jia2011mutation,papadakis2019mutation} works by injecting controlled faults into a program and checking whether the test suite detects them. A test that kills many mutants is a strong test; one that lets mutants survive is weak in specific, diagnosable ways. The technique has been a standard adequacy metric for decades.
+
+OracleGuard borrows the mechanism but changes the target. Rather than evaluating an existing suite, we use mutation outcomes to score \emph{generated} assertions before they are accepted. Mutation becomes an acceptance filter, not just a measurement. Recent work has explored adjacent uses of this combination~\cite{straubinger2025mutation,alimadadi2026hybrid}.
+
+% -------------------------------------------------
+\section{Motivation and Problem Statement}
+
+Here is a scenario that motivated this work. A developer points OracleGuard at a discount-calculation function. The LLM proposes four assertions: not null, is float, equals 80.0, result is between zero and price. All four look correct. Three of them are. The fourth—the bounds check—will pass even if the function applies the discount twice, returning a negative price for large discounts. That bug will ship.
+
+This is not a hypothetical. It is the specific kind of failure that mutation testing exists to expose. The bounds assertion survives a return-value mutation that produces $-20.0$, because $-20.0$ is still less than $100.0$. Without running the mutant, you would never know.
+
+\textbf{Problem statement.} Given a Python function and a set of automatically generated test inputs, synthesize executable test assertions via an LLM, then evaluate each assertion's fault-detection ability by running mutation-based differential testing across six operator classes. Aggregate the outcomes into a normalized trust score that guides acceptance, rejection, or targeted refinement.
+
+\subsection{Mutation Operator Coverage}
+
+Six mutation classes stress-test the generated assertions from different angles:
+
+\begin{itemize}
+\item Arithmetic substitution — \texttt{*} becomes \texttt{+}, \texttt{/} becomes \texttt{-}, etc.
+\item Relational replacement — \texttt{<} becomes \texttt{<=}, \texttt{==} becomes \texttt{!=}, etc.
+\item Logical transformation — \texttt{and} becomes \texttt{or}, \texttt{not} inserted or removed.
+\item Constant modification — literals shifted by $\pm1$ or multiplied.
+\item Statement deletion — a line of the function body removed entirely.
+\item Return-value mutation — the returned expression replaced with a constant or zero.
+\end{itemize}
+
+Survival patterns map directly to assertion gaps. Return-value survivors mean no value check. Relational survivors mean the comparison direction was never tested. Statement-deletion survivors mean entire code paths go unobserved.
+
+\subsection{Trust Score Design}
+
+The trust score draws on uncertainty quantification work in LLMs~\cite{xiong2023express_confidence,liu2024uncertainty_estimation}. Five signals feed into a single normalized value:
+
+\begin{itemize}
+\item $M$ — mutation score: killed / (killed + survived)
+\item $L$ — mean model confidence across returned assertions
+\item $C$ — consistency: stability of assertion behavior across repeated executions
+\item $V$ — coverage estimate: proportion of code paths exercised
+\item $P$ — complexity penalty: cyclomatic complexity adjustment
+\end{itemize}
+
+\[
+T = 0.35M + 0.20L + 0.25C + 0.15V - 0.05P
+\]
+
+$T \in [0,1]$ maps to four verdicts: \texttt{VERIFIED} ($T \geq 0.80$), \texttt{SUSPICIOUS} ($0.60 \leq T < 0.80$), \texttt{NEEDS\_REFINEMENT} ($0.40 \leq T < 0.60$), \texttt{REJECTED} ($T < 0.40$).
+
+\subsection{Research Questions}
+
+\begin{itemize}
+\item \textbf{RQ1}: Does mutation-based differential testing, applied across all six operator classes, consistently expose weaknesses in LLM-generated assertions?
+\item \textbf{RQ2}: Does the weighted trust score correlate with actual oracle correctness across functions of varying complexity?
+\end{itemize}
+
+% -------------------------------------------------
+\section{The OracleGuard Pipeline}
+
+\subsection{Overview}
+
+Five stages. Each one produces a typed artifact. Each one can be run independently or skipped if its artifact already exists on disk. The orchestrator coordinates them; the stages do not know about each other.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.92\linewidth}{
+\textbf{Stage 1: Static Analysis} $\rightarrow$ \texttt{MUTMetadata} \\
+\textbf{Stage 2: Prefix Generation} $\rightarrow$ \texttt{TestPrefix} \\
+\textbf{Stage 3: LLM Assertion Synthesis} $\rightarrow$ \texttt{TestCase} \\
+\textbf{Stage 4: Differential Testing} $\rightarrow$ \texttt{DifferentialReport} \\
+\textbf{Stage 5: Scoring \& Refinement} $\rightarrow$ \texttt{OracleVerdict}
+}}
+\caption{OracleGuard pipeline: typed artifacts flow left to right.}
+\label{fig:og-pipeline}
+\end{figure}
+
+\subsection{Stage 1: Static Analysis}
+
+Python's \texttt{ast} module does most of the work here. We parse the source file, walk the tree for function definitions, and pull out everything the downstream stages need: full signature with type annotations, parameter names and types, return type, docstring text, called attributes and dependencies, and cyclomatic complexity computed from decision-node count.
+
+Functions outside the complexity range 2--20 are filtered. Below 2: too trivial to learn from. Above 20: too tangled to test reliably at the unit level without decomposition.
+
+Output: one \texttt{MUTMetadata} object per qualifying function.
+
+\subsection{Stage 2: Test Prefix Generation}
+
+Before an assertion can run, the function has to be callable. Stage 2 builds that scaffold: import statements, fixture instantiation for instance methods, and concrete parameter values.
+
+Three input strategies are available. \textbf{Random} picks type-appropriate values without bias—good for broad coverage. \textbf{Boundary} targets the edges: zero, empty string, maximum integer, empty list, None where permitted. \textbf{Equivalence} picks one representative value per logical partition.
+
+\begin{lstlisting}[language=Python]
+int   -> random.randint(1, 100)
+float -> random.uniform(0.0, 100.0)
+str   -> f"test_{param_name}"
+bool  -> random.choice([True, False])
+list  -> [1, 2, 3] or []
+\end{lstlisting}
+
+All three strategies can be run in sequence to generate multiple test prefixes per function. More prefixes means more assertion candidates and a more stable trust score.
+
+\subsection{Stage 3: LLM Assertion Synthesis}
+
+The prompt packages everything Stage 1 and 2 produced: signature, source, docstring, concrete inputs, and the invocation statement. A JSON schema is appended requiring the model to return each assertion with its confidence and a plain-English explanation.
+
+\begin{lstlisting}
+Generate test assertions for this function.
+
+Signature: def f(...)
+Docstring: ...
+Source: ...
+Test inputs: ...
+Call: result = f(...)
+
+Respond only in JSON:
+{assertions, confidence, explanation, type}
+\end{lstlisting}
+
+The provider layer wraps API calls behind a common interface—swap \texttt{gpt-4o} for \texttt{claude-3-5-sonnet} or a local Ollama model without touching any other stage. A mock provider replays cached responses for offline development and reproducible testing.
+
+\subsection{Stage 4: Differential Testing}
+
+This is where candidates earn their place. For each generated test case, Stage 4 produces $N$ mutants by applying the six operator classes to the function's AST, then runs the test against each mutant in an isolated subprocess with a configurable timeout.
+
+Two outcomes per mutant: the test fails (mutant killed—good) or the test passes (mutant survived—the assertion missed this fault). The mutation score is:
+
+\[
+\text{MutationScore} = \frac{|\text{Killed}|}{|\text{Killed}| + |\text{Survived}|}
+\]
+
+Survival is not just a number. Each surviving mutant is tagged with its operator class, the specific change made, and the line number. Stage 5 reads these tags to produce targeted refinement suggestions.
+
+\subsection{Stage 5: Scoring and Refinement}
+
+Stage 5 computes $T$ from the five signals above and issues a verdict. Then it reads the surviving mutant log and maps operator classes to recommendation types:
+
+\begin{itemize}
+\item Relational survivors $\rightarrow$ add comparison boundary assertions
+\item Constant-modification survivors $\rightarrow$ tighten value equality checks
+\item Statement-deletion survivors $\rightarrow$ add assertions that cover removed code paths
+\item Return-value survivors $\rightarrow$ add direct value equality or range assertions
+\item Logical survivors $\rightarrow$ check exception conditions and boolean flags
+\end{itemize}
+
+The output is an \texttt{OracleVerdict}: score, status, list of specific weaknesses with line references, and a ranked list of suggested assertion additions.
+
+% -------------------------------------------------
+\section{Implementation Design}
+
+\subsection{Why Python, Why AST-First}
+
+Python was not chosen arbitrarily. Its \texttt{ast} module gives us parse-modify-unparse in the standard library—no external dependency, no version mismatch, no compiler required. AST-level mutation is also safer than text-based substitution: we manipulate nodes, not strings, which means the mutated code is always syntactically valid.
+
+Subprocess isolation matters for a different reason. Mutations sometimes produce infinite loops, memory exhaustion, or crashes. Forking each execution into a subprocess with a timeout means one bad mutant cannot derail the pipeline.
+
+Three design principles guided implementation choices throughout:
+
+\begin{itemize}
+\item \textbf{Modularity first.} Each stage has a single responsibility and a typed interface. You can replace the LLM provider without touching the mutation engine. You can replay a stored \texttt{DifferentialReport} through Stage 5 without re-running the LLM.
+\item \textbf{Artifacts are the contract.} Stages communicate through serializable objects, not shared state. This makes the pipeline debuggable and reproducible.
+\item \textbf{No required fine-tuning.} Any model that follows the JSON schema works. This keeps the framework accessible to teams without ML infrastructure.
+\end{itemize}
+
+\subsection{Extension Points}
+
+Three interfaces are designed for substitution:
+
+\texttt{LLMProvider} — wraps API calls and response parsing. Implement this to add a new model backend.
+
+\texttt{MutationOperator} — defines a single AST transformation. New operators register themselves; the engine discovers them automatically.
+
+\texttt{InputStrategy} — generates parameter values given a type annotation. Teams with domain knowledge can inject their own boundary conditions without modifying the prefix generator.
+
+% -------------------------------------------------
+\section{Evaluation Plan}
+
+\subsection{What We Want to Measure}
+
+Two questions drive the evaluation design, one per research question above.
+
+For RQ1, we want to know whether the mutation engine actually finds assertion gaps—not just that it produces a score, but that the score meaningfully separates strong assertions from weak ones. This requires a benchmark where ground-truth oracle quality is known or inferable.
+
+For RQ2, we want to know whether $T$ correlates with real fault detection. A trust score that predicts nothing is decoration. We will compare VERIFIED verdicts against human-written assertions on the same functions and check whether the mutation kill rates hold up on independently injected faults.
+
+\subsection{Benchmark Design}
+
+The benchmark will cover three function categories: arithmetic and numeric (where value mutations are most informative), data structure manipulation (where statement-deletion mutations matter), and algorithmic/conditional logic (where relational and logical mutations do the work).
+
+For each function we will run all three input strategies, multiple LLM providers, and mutant counts from 20 to 100. This gives us enough data to study how trust score stability varies with mutant count—a practical question for teams choosing pipeline configurations.
+
+Baselines: human-written assertions, template-generated assertions using type information alone, and raw LLM assertions accepted without validation.
+
+\subsection{Validity Controls}
+
+Four threats are worth naming explicitly.
+
+Mutation score as a correctness proxy is well-studied but imperfect~\cite{jia2011mutation}. It does not catch semantic errors that no syntactic mutation exposes. We will supplement with real-bug datasets where available.
+
+Model variability means the same function may produce different assertion sets across runs. We will report trust score variance across five runs per function, not just mean scores.
+
+The trust score weights ($0.35, 0.20, 0.25, 0.15, 0.05$) are design choices, not empirically calibrated values. Sensitivity analysis across weight variations is part of the evaluation plan.
+
+Single-language scope is a limitation we are not pretending away. Python-specific AST tooling means extension to Java or TypeScript requires work. We will quantify what that work looks like rather than leaving it as vague future work.
+
+% -------------------------------------------------
+\section{Discussion}
+
+\subsection{The Core Trade-off}
+
+Running $N$ mutants per function is not free. For $N=50$ and a function that takes 10ms to execute, Stage 4 adds roughly half a second of wall time. For $N=200$ it adds two seconds. Against a benchmark of 500 functions, this becomes meaningful.
+
+We think the trade-off is worth it—a validated oracle that catches a production regression pays for itself many times over—but teams with tight CI budgets need to know the cost upfront. The pipeline supports a fast mode (20 mutants, boundary inputs only) and a thorough mode (100 mutants, all three input strategies) precisely because this is a real concern.
+
+\subsection{What Surviving Mutants Actually Tell You}
+
+The most practically useful output from Stage 5 is not the trust score. It is the surviving mutant log.
+
+A score of 0.72 (SUSPICIOUS) is abstract. ``Three relational-operator mutants survived; specifically, mutations replacing \texttt{>} with \texttt{>=} on line 14 all passed'' is actionable. The developer knows exactly which assertion is missing: a test that passes \texttt{discount\_percent = 0} and checks that the result equals the original price, confirming the boundary is exclusive not inclusive.
+
+This is the design principle behind the refinement engine. Aggregate scores inform policy decisions (should we accept this oracle class?). Specific weakness reports inform developer decisions (what do I add to fix this oracle?).
+
+\subsection{Relationship to Generation-Focused Work}
+
+It is worth being direct about how OracleGuard relates to TOGLL~\cite{hossain2024togll} and similar generation-first systems. They are solving a different problem at a different point in the workflow.
+
+TOGLL asks: how do we make the model generate better oracles on average? OracleGuard asks: for this specific oracle, how much should we trust it? Both questions need answers. A team running TOGLL's fine-tuned model through OracleGuard's validation layer gets both: better average generation quality and per-oracle trust signals. There is no conflict.
+
+% -------------------------------------------------
+\section{Threats to Validity}
+
+\paragraph{Internal.} OracleGuard is currently a design and prototype framework, not a production system evaluated at scale. The metric values in examples are illustrative. Two threats are specific to the proposed approach: mutation operator coverage may be incomplete for some function classes (pure I/O functions, for example, may not yield informative arithmetic mutations), and LLM confidence scores are self-reported and may not calibrate well against actual oracle correctness.
+
+\paragraph{External.} Everything described here targets Python functions in isolation. Stateful objects, async code, functions with filesystem side effects, and multi-threaded logic all require additional handling that is not yet designed. Claiming the approach generalizes to those domains without evidence would be premature.
+
+\paragraph{Construct.} Using mutation score as the primary oracle quality signal is a pragmatic choice with known limitations~\cite{jia2011mutation,papadakis2019mutation}. The trust score formula encodes assumptions about relative signal importance that have not been empirically validated. Different weight choices could shift verdicts for borderline cases. We treat the current weights as a starting point for calibration, not a final answer.
+
+% -------------------------------------------------
+\section{Conclusion}
+
+Testing has an input problem and an oracle problem. The input problem is largely solved. The oracle problem is not.
+
+OracleGuard is our answer to one part of that gap: the part where an LLM generates a plausible assertion and someone has to decide whether to trust it. Our answer is: do not decide based on the assertion's appearance. Decide based on what it does when the code around it breaks. Run the mutants. Read the survivors. Score the result.
+
+The five-stage pipeline operationalizes that answer. Static analysis, input synthesis, LLM generation, mutation-based differential testing, and trust-scored refinement are independent components with clean interfaces. Any stage can be improved, replaced, or studied in isolation. The whole is greater than the sum—but the parts are still useful separately.
+
+\subsection{What Comes Next}
+
+Three priorities for the next phase of work:
+
+\begin{itemize}
+\item \textbf{Empirical validation.} Run the full benchmark. Get real numbers. Calibrate the trust score weights against ground-truth oracle correctness on known-buggy codebases.
+\item \textbf{Iterative refinement loop.} Right now Stage 5 suggests improvements and stops. The obvious extension is to feed those suggestions back to Stage 3—prompt the LLM with the surviving mutant report and ask for additional assertions. Early experiments suggest this converges in two to three rounds for most functions.
+\item \textbf{Language extension.} Java and TypeScript are the immediate targets. The mutation engine and trust scoring logic are language-agnostic; only Stage 1 and Stage 2 need language-specific implementations.
+\end{itemize}
+
+OracleGuard will not write perfect oracles. No system will. But it will tell you, clearly and specifically, which oracles are weak and why—and that is something developers have not had before.
+
+% -------------------------------------------------
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+% -------------------------------------------------
+\appendix
+
+\section{Worked Example}
+
+\subsection{The Function}
+
+\begin{lstlisting}[language=Python]
+def calculate_discount(price: float,
+                       discount_percent: float) -> float:
+    """Calculate discounted price. Raises ValueError
+    if discount_percent is outside [0, 100]."""
+    if discount_percent < 0 or discount_percent > 100:
+        raise ValueError(
+            "Discount must be between 0 and 100")
+    discount_amount = price * (discount_percent / 100)
+    return round(price - discount_amount, 2)
+\end{lstlisting}
+
+\subsection{LLM-Generated Test}
+
+\begin{lstlisting}[language=Python]
+def test_calculate_discount_0():
+    result = calculate_discount(100.0, 20.0)
+    assert result is not None          # weak
+    assert isinstance(result, float)   # useful
+    assert result == 80.0              # strong
+    assert 0 <= result <= 100.0        # weak - see below
+\end{lstlisting}
+
+\subsection{What the Mutation Run Finds}
+
+The value assertion (\texttt{result == 80.0}) kills arithmetic and constant mutations cleanly. The bounds check (\texttt{0 <= result <= 100.0}) is the problem. A return-value mutation that returns \texttt{price * 2} — $200.0$ — survives it. A statement-deletion mutant that skips the discount calculation and returns \texttt{price} unchanged also survives.
+
+Stage 5 reads these survivors and generates two targeted suggestions: (1) tighten the upper bound to \texttt{result <= price}, and (2) add a test that passes \texttt{discount\_percent=100} and asserts \texttt{result == 0.0}. With those two additions, the mutation score jumps from 0.61 to 0.94 and the verdict moves from \texttt{SUSPICIOUS} to \texttt{VERIFIED}.
+
+That is the loop in practice. Not a black box that outputs a number—a system that shows its work.
+
+\end{document}

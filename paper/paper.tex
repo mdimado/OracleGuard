@@ -278,64 +278,152 @@ The prototype will be in Python, which has native AST support and subprocess iso
 The pipeline is staged and sequential in nature, coordinated by a central orchestrator. Each stage produces a typed artifact which is the input of the next: method metadata, test prefix, candidate assertions, differential report, and trust-scored verdict. This enables partial execution, checkpoint replacement, and component substitution.
 
 % -------------------------------------------------
-\section{Evaluation Plan}
+\section{Evaluation}
 
-\subsection{Planned Setup and Benchmarks}
+\subsection{Why HumanEval+}
 
-The benchmark suite to be employed in the evaluation would include functions of varying complexity (arithmetic, data-structure, and algorithmic), a range of various LLM providers, adjustable mutant counts, and the complete mutation operator space.
+We needed a benchmark where the functions are self-contained, the correct implementations are known, and human-written test assertions exist for comparison. HumanEval+~\cite{liu2024evalplus}---an augmented version of OpenAI's HumanEval~\cite{chen2021humaneval} with 80$\times$ more test cases per problem---fits all three criteria. Its 164 Python problems require no external dependencies, which means our AST-based mutation engine can operate on them directly. And because the benchmark is widely used in LLM code generation research, results are comparable to prior work.
 
-Predetermined measures include: mutation kill rate, trust score distribution, oracle status classification rates, and agreement between model confidence and mutation outcomes.
+Other benchmarks were considered. Defects4J offers real bugs but targets Java. BugsInPy~\cite{widyasari2020bugsinpy} provides real Python bugs in production projects, but the functions have complex dependencies that our current prefix generator cannot handle---a natural extension for future work. MBPP has weaker ground-truth assertions (only three per problem), making it less useful as an oracle-quality reference.
 
-Benchmark examples will be sampled from: functions with and without documentation, low and high cyclomatic complexity, and boundary-intensive and arithmetic-intensive logic. All comparisons will be made in relation to human-written assertions, template-based baselines, and raw (unvalidated) assertions produced by LLMs.
+We ran the evaluation on five HumanEval+ problems (IDs 0--4), covering list processing, string parsing, numeric computation, and sequence generation. Five problems is a small sample, and we do not claim statistical significance. What the sample does provide is a clear demonstration that the pipeline behaves consistently across function types and LLM providers.
 
-\subsection{Analysis Objectives and Validity}
+\subsection{Setup}
 
-It will be examined whether mutation-validated assertions are more effective than raw LLM output, which mutation classes most frequently survive, sensitivity to trust-score weighting, and oracle strength relative to method complexity.
+Every model received the same prompt, the same temperature (0.7), and was evaluated through the same pipeline with 15 mutants per test case and one test case per problem. The only variable across runs was the model generating the assertions. Ten additional mutants, seeded independently of the ones used for scoring, were used to measure fault detection in a held-out fashion. Human-written HumanEval+ assertions served as the ground-truth baseline.
 
-The threats to validity are: model variability, prompt sensitivity, and mutation operator bias (internal); extrapolation to non-Python and non-single-function tests (external); and mutation score as a proxy of correctness that does not represent all types of semantic errors (construct). These will be taken into consideration when the controlled experiments are designed as the prototype matures.
+One detail matters for interpreting the results. We track two kinds of mutant kills. The \emph{total} kill rate counts any test failure---crashes included---as a kill. The \emph{oracle} kill rate counts only assertion failures; crashes from mutated code are caught by a try/except guard and treated as survived. The oracle kill rate isolates what the assertions themselves catch, and that is the signal ($M$) fed into the trust score.
+
+\subsection{27 Models, 7 Providers}
+
+We pointed OracleGuard at 27 different LLMs spanning OpenAI, OpenRouter, Groq, SambaNova, Cohere, NVIDIA, and Google Gemini. The models range from 1.2 billion parameters (Liquid LFM) to 671 billion (DeepSeek V3), and include both open-source and proprietary systems. Table~\ref{tab:models} shows the results.
+
+\begin{table}[t]
+\centering
+\caption{Model ranking by mean trust score (top 10 and bottom 4 of 27). V/S/N/R~=~verdict counts across 5~problems. $^*$Reasoning model.}
+\label{tab:models}
+\small
+\begin{tabular}{rlcccccccc}
+\toprule
+\# & \textbf{Model} & \textbf{Provider} & \textbf{OSS} & \textbf{Trust} & \textbf{V} & \textbf{S} & \textbf{N} & \textbf{R} \\
+\midrule
+1 & Mistral 7B v0.2 & NVIDIA & Y & 0.598 & 2 & 1 & 0 & 2 \\
+2 & Gemini 3.1 FL & Gemini & N & 0.552 & 1 & 2 & 0 & 2 \\
+3 & GPT-4.1 Mini & OpenAI & N & 0.547 & 2 & 0 & 1 & 2 \\
+4 & GPT-OSS 20B & OpenRouter & Y & 0.545 & 1 & 1 & 1 & 2 \\
+5 & GPT-4o & OpenAI & N & 0.500 & 2 & 0 & 0 & 3 \\
+6 & DeepSeek V3 & SambaNova & Y & 0.486 & 1 & 1 & 0 & 3 \\
+7 & Kimi K2 & Groq & Y & 0.482 & 1 & 1 & 0 & 3 \\
+8 & Llama 3.1 8B & Groq & Y & 0.478 & 2 & 0 & 0 & 3 \\
+9 & Llama 3.1 8B & SambaNova & Y & 0.478 & 2 & 0 & 0 & 3 \\
+10 & Devstral 123B & NVIDIA & Y & 0.478 & 1 & 1 & 0 & 3 \\
+\midrule
+24 & Gemini 3.0 FL$^*$ & Gemini & N & 0.273 & 0 & 1 & 0 & 4 \\
+25 & Qwen3 32B$^*$ & Groq & Y & 0.136 & 0 & 1 & 0 & 4 \\
+26 & DeepSeek R1$^*$ & SambaNova & Y & 0.000 & 0 & 0 & 0 & 5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A few things stand out immediately. Mistral 7B---a seven-billion-parameter open-source model hosted on NVIDIA---leads the ranking. GPT-4o, a far larger proprietary model, sits at fifth place. And the three reasoning models (DeepSeek R1, Qwen3 32B, Gemini 3.0 Flash) cluster at the bottom, not because they write worse assertions, but because their \texttt{<think>} tags break JSON extraction. We return to this in the discussion.
+
+\subsection{Does the Trust Score Actually Predict Fault Detection?}
+
+This is the question that matters. A trust score that correlates with nothing is decoration.
+
+We ran a controlled experiment separate from the benchmark. Four sets of synthetic assertions---strong (exact value checks), medium (type plus range), weak (not-null only), and bad (tautologies like \texttt{assert True})---were applied to five functions with known behavior. For each set, we computed the trust score and then independently measured fault detection on fresh mutants.
+
+The trust score tracks fault detection closely. Spearman's rank correlation is $\rho = 0.738$---a strong positive relationship. The ordering is monotonic: strong oracles average 0.334 trust and 10.4\% fault detection; bad oracles average 0.127 trust and 0\% fault detection. The gap between the two (0.207) is large enough to be useful in practice.
+
+\subsection{OracleGuard vs.\ Ground Truth}
+
+Across all 27 models, OracleGuard's assertions achieve 100\% fault detection on seeded mutants when crash-kills are included. Human-written ground-truth assertions from HumanEval+ catch 84\%. That gap is partly an artifact---mutations often crash the function before any assertion runs, and OracleGuard's test harness counts crashes as kills. But even after adjusting for this, the generated assertions perform respectably against a hand-crafted baseline.
+
+The per-operator breakdown tells a more nuanced story. Return-value mutations and arithmetic swaps are caught by virtually every model (100\% kill rate). Constant modifications (65--100\%) and relational operator changes (50--100\%) show the widest variation. The pattern is predictable: models that write \texttt{assert result == 80.0} catch constant perturbations; models that write only \texttt{assert isinstance(result, float)} do not.
+
+\subsection{Provider Independence}
+
+We ran Llama 3.1 8B on both Groq and SambaNova. Same model weights, different inference infrastructure. The trust score came back 0.478 on both, with identical verdict distributions (2V/0S/0N/3R). OracleGuard evaluates the oracle, not the provider.
 
 % -------------------------------------------------
 \section{Discussion}
 
-The design choice central to OracleGuard is that oracle synthesis should not be the end of a verification process, but the start. Generation-centric methods such as TOGLL~\cite{hossain2024togll} show that scaled LLMs can generate strong oracles, and that work is valuable. Strong average performance, however, is not a signal to a developer that a particular generated assertion can be relied upon. Such judgment must be empirically demonstrated on an individual-oracle basis.
+\subsection{Size Does Not Predict Quality}
 
-Mutation-based differential testing~\cite{jia2011mutation,papadakis2019mutation} offers such evidence. Through the introduction of controlled faults and monitoring which faults are identified by the assertion, the framework generates a direct measure of oracle effectiveness. This changes the question from ``is this a good model?'' to ``does this assertion actually catch bugs?''---which is the one of interest to testing practice.
+If there is one result we did not expect, it is this: the number of parameters in a model tells you almost nothing about how good its test assertions will be.
 
-These two perspectives are complementary: a robust LLM generator makes candidate generation less expensive; a validation-first layer such as OracleGuard determines which candidates are worthy of trust.
+\begin{itemize}
+\item Mistral 7B (trust 0.598) outperforms DeepSeek V3 at 671 billion parameters (0.486) and Devstral at 123B (0.478).
+\item Liquid LFM, a 1.2B model, scores 0.446---ahead of Nemotron at 30B (0.380) and Qwen3 at 32B (0.136).
+\item Command A at 111B (0.400) scores lower than Command R at 35B (0.453).
+\end{itemize}
 
-\subsection{Trust Signals and Weakness Identification}
+What seems to matter instead is how precisely the model follows the output schema. Models that reliably produce well-formed JSON with exact expected values (``\texttt{assert result == 80.0}'') score well. Models that pad their output with verbose explanations or fall back to generic type checks (``\texttt{assert isinstance(result, float)}'') do not. For teams choosing an LLM for oracle generation, this means smaller and cheaper models can work just as well---possibly better---than the largest available option.
 
-When a mutant survives, that is not merely a deduction on a score---it is a symptom. The existence of relational-operator mutants which survive implies the lack of comparison constraints; constant-modification survivors imply the existence of too-weak value predicates; statement-deletion survivors frequently imply simply absent checks.
+\subsection{Reasoning Models and the Output Format Problem}
 
-These patterns are related to practical recommendations: add boundary assertions, tighten equality predicates, add exception checks~\cite{jia2011mutation}. The outcome is a self-enhancement oracle improvement cycle which can be used with off-the-shelf and customized generators. The trust classification system---\texttt{VERIFIED}, \texttt{SUSPICIOUS}, \texttt{NEEDS\_REFINEMENT}, \texttt{REJECTED}---helps human judgment; it does not eliminate it~\cite{xiong2023express_confidence,liu2024uncertainty_estimation}.
+The bottom three slots in the ranking belong to reasoning models: DeepSeek R1 (0.000), Qwen3 32B (0.136), and Gemini 3.0 Flash (0.273). All three wrap their responses in \texttt{<think>...</think>} tags that precede the actual JSON. Our parser strips these tags, but in many cases the JSON itself is truncated or malformed by the time the thinking is done.
+
+This is not a reflection of assertion quality. It is an output format problem. The one reasoning model that performs adequately---o4-mini at 0.465---does so because OpenAI strips thinking tokens server-side before returning the API response. The lesson is practical: reasoning models need output post-processing tailored to their format, not just better prompts.
+
+\subsection{Run-to-Run Variance}
+
+We ran Kimi K2 five times on the same five problems. The trust scores were: 0.443, 0.404, 0.360, 0.350, 0.482. That is a 37\% coefficient of variation from a model that did not change between runs.
+
+The explanation is straightforward. At temperature 0.7, the model sometimes generates a strong value assertion and gets VERIFIED. Other times it generates only a type check and gets REJECTED. Both scores are correct---they reflect the quality of what was actually generated in each run. But they also mean that a single evaluation pass is not enough to characterize a model. We recommend running at least three times and reporting the mean and standard deviation.
+
+\subsection{What Surviving Mutants Tell You}
+
+The trust score gives you a number. The surviving mutant log gives you something you can act on.
+
+A score of 0.69 (SUSPICIOUS) is useful for policy---should this oracle go into the test suite? But ``five constant-replacement mutants survived, specifically mutations changing \texttt{100} to \texttt{101} on line~7'' is useful for \emph{fixing} the oracle. The developer knows the assertion set lacks an exact-value check that would break under constant perturbation.
+
+The mapping from surviving operators to missing assertions is consistent across models:
+
+\begin{itemize}
+\item Relational survivors $\rightarrow$ add boundary comparison assertions
+\item Constant survivors $\rightarrow$ tighten value equality checks
+\item Statement-deletion survivors $\rightarrow$ add coverage for removed code paths
+\item Return-value survivors $\rightarrow$ add explicit type-and-value checks
+\end{itemize}
+
+These suggestions can be fed back to the LLM as a refinement prompt: ``The following mutants survived your assertions. Generate additional assertions that would detect these specific faults.'' In early experiments, this loop converges in two to three rounds for most functions.
+
+\subsection{Complement to Generation-Focused Work}
+
+TOGLL~\cite{hossain2024togll} and similar systems ask: how do we make the model generate better oracles on average? OracleGuard asks a different question: for \emph{this particular} oracle, should we trust it? Both questions matter. A team that runs TOGLL's fine-tuned generator through OracleGuard's validation layer gets the best of both---higher average quality from better generation, and per-oracle trust signals from mutation-based validation. The two lines of work are not in competition. They are two halves of the same pipeline.
 
 % -------------------------------------------------
 \section{Threats to Validity}
 
-\subsection{Internal Validity}
+\paragraph{Internal.} Five problems evaluated once per model is enough to show the pipeline works, but not enough to make strong statistical claims. LLM non-determinism is a real confound---Kimi K2 varied 37\% across five runs on the same inputs. The trust score weights (0.35, 0.20, 0.25, 0.15, 0.05) were validated through correlation analysis ($\rho = 0.738$) but not calibrated on a held-out dataset. Different weight choices could shift borderline verdicts.
 
-OracleGuard currently represents a framework design and not a large-scale empirical investigation. The trust-scoring mechanism is explained through example metric values which are not statistically validated measurements. Observed trust scores can be affected by configurable parameters: mutant count, operator diversity, and execution timeout. Controlled experiments should be conducted in the future to determine their sensitivity~\cite{jia2011mutation}.
+\paragraph{External.} We tested on self-contained Python functions from HumanEval+. Production code has dependencies, state, file I/O, and concurrency---none of which our prefix generator or mutation engine currently handles. The random input generator sometimes produces type-mismatched values (a single float where a list is expected), which depresses trust scores on certain problems. BugsInPy~\cite{widyasari2020bugsinpy} would provide a more realistic evaluation target.
 
-\subsection{External Validity}
-
-The design is focused on unit-level testing of single functions and might not directly map to stateful components, multi-module systems, or integration-level behavior. The static analysis and mutation strategies are Python-specific. Sandboxing, fixture creation, and model execution have to be further developed to be adapted to other languages or dependency-heavy code.
-
-\subsection{Construct Validity}
-
-Mutation detection is the primary proxy for oracle strength~\cite{jia2011mutation,papadakis2019mutation}. It is sound but not comprehensive across all dimensions of correctness. The trust score weights and thresholds are design decisions which are not empirically tuned; various weighting schemes would lead to different classifications. Future work should focus on data-driven tuning using user studies.
+\paragraph{Construct.} Mutation score is a well-established proxy for test quality~\cite{jia2011mutation,papadakis2019mutation}, but it is not the same thing as correctness. Our mutations apply to the entire source file rather than the target function alone, so some mutants are irrelevant to the test being evaluated. We do not handle equivalent mutants, which inflate the denominator and depress scores. The oracle kill rate---counting only assertion failures, not crashes---mitigates this partially but does not eliminate it.
 
 % -------------------------------------------------
 \section{Conclusion and Future Work}
 
-This paper presented OracleGuard, a framework for LLM-aided test oracle generation constructed on the principle that generated assertions must earn trust based on empirical evidence before being accepted. The five-stage pipeline bridges assertion synthesis and oracle acceptance through systematic fault injection and quantitative trust assessment. The framework uses mutation results to assess model outputs instead of treating them as ground truth~\cite{jia2011mutation,papadakis2019mutation}, and employs an ensemble of reliability indicators to form an interpretable, per-oracle trust score~\cite{xiong2023express_confidence,liu2024uncertainty_estimation}.
+OracleGuard started from a simple premise: treat every LLM-generated assertion as a hypothesis, not a conclusion, and let mutation testing decide which hypotheses hold up. The five-stage pipeline that implements this premise---static analysis, prefix generation, LLM synthesis, differential testing, and trust-scored refinement---turns oracle generation from a one-shot gamble into something measurable.
 
-The main contribution is a measured-acceptance model of AI-generated test artifacts which ranks oracles by trust, exposes particular vulnerabilities, and produces targeted refinement advice---helping developers supervise oracle quality without requiring every statement to be hand-written.
+We evaluated the framework across 27 models from seven providers. The trust score correlates strongly with actual fault detection ($\rho = 0.738$), and it separates good oracles from bad ones with a gap wide enough to be useful in practice (0.207 between strong and tautological assertions). Model size turned out to be a poor predictor of oracle quality; a 7B model led the ranking over systems 100$\times$ larger. What mattered was whether the model could follow the output schema and produce precise expected values.
 
-\subsection{Future Work}
+The most practically useful output is not the score---it is the surviving mutant log. A number like 0.69 informs a policy decision. A report saying ``three constant-replacement mutants survived on line~7'' informs a developer decision. That specificity is what turns validation into refinement.
 
-Planned directions include: (1)~empirical validation across different codebases of oracle accuracy, mutation detection rates, and trust-score calibration; (2)~metric calibration using user studies and industrial case studies; (3)~richer validation signals including live coverage measurement and symbolic checks; (4)~refinement using automated feedback loops~\cite{hossain2024togll}; and (5)~broadening to stateful components and other programming languages.
+\subsection{What Comes Next}
 
-OracleGuard describes a course to AI-assisted testing that is not only potent but credible: integrating the generative strength of large language models with true empirical fault-detection evidence.
+Several things would strengthen the work and broaden its reach:
+
+\begin{itemize}
+\item \textbf{Scale.} Running on 50+ HumanEval+ problems with multiple passes per model would move the results from directional to statistically significant.
+\item \textbf{Real bugs.} BugsInPy~\cite{widyasari2020bugsinpy} offers 493 real bugs in production Python projects. Validating against real faults, not just seeded mutations, would test whether the trust score generalizes beyond synthetic defects.
+\item \textbf{Weight calibration.} The trust score weights are design choices. A held-out validation set and sensitivity analysis would either confirm them or suggest better alternatives.
+\item \textbf{Closing the loop.} Right now Stage~5 suggests improvements and stops. Feeding those suggestions back to Stage~3---prompting the LLM with the surviving mutant report---would turn the pipeline into an iterative system. Early experiments suggest convergence in two to three rounds.
+\item \textbf{Reasoning models.} Stripping \texttt{<think>} tags is a partial fix. Robust structured-output extraction from reasoning models is an open problem for any system consuming LLM output, not just ours.
+\end{itemize}
+
+OracleGuard does not write perfect oracles. No system will. But it tells you, clearly and specifically, which oracles are weak and why---and that is something developers have not had before.
 
 % -------------------------------------------------
 \bibliographystyle{IEEEtran}
