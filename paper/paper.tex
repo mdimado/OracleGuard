@@ -22,10 +22,15 @@
 \title{OracleGuard: Trust-Scored LLM-Based Test Oracle Generation\\with Differential Validation}
 
 \author{
-  \IEEEauthorblockN{Anonymous Author(s)}
-  \IEEEauthorblockA{Anonymous Institution\\
-  Anonymous City, Country\\
-  anonymous@email.com}
+  \IEEEauthorblockN{Omkar Kabde}
+  \IEEEauthorblockA{Chaitanya Bharathi Institute of Technology\\
+  Hyderabad, India\\
+  omkarkabde@gmail.com}
+  \and
+  \IEEEauthorblockN{Mohammed Imaduddin}
+  \IEEEauthorblockA{Chaitanya Bharathi Institute of Technology\\
+  Hyderabad, India\\
+  mdimad005@gmail.com}
 }
 
 \begin{document}
@@ -300,27 +305,27 @@ We pointed OracleGuard at 27 different LLMs spanning OpenAI, OpenRouter, Groq, S
 
 \begin{table}[t]
 \centering
-\caption{Model ranking by mean trust score (top 10 and bottom 4 of 27). V/S/N/R~=~verdict counts across 5~problems. $^*$Reasoning model.}
+\caption{Model ranking by mean trust score (top 10 and bottom 3 of 27). $^*$Reasoning model.}
 \label{tab:models}
 \small
-\begin{tabular}{rlcccccccc}
+\begin{tabular}{rlccccccc}
 \toprule
-\# & \textbf{Model} & \textbf{Provider} & \textbf{OSS} & \textbf{Trust} & \textbf{V} & \textbf{S} & \textbf{N} & \textbf{R} \\
+\# & \textbf{Model} & \textbf{Provider} & \textbf{Trust} & \textbf{V} & \textbf{S} & \textbf{N} & \textbf{R} \\
 \midrule
-1 & Mistral 7B v0.2 & NVIDIA & Y & 0.598 & 2 & 1 & 0 & 2 \\
-2 & Gemini 3.1 FL & Gemini & N & 0.552 & 1 & 2 & 0 & 2 \\
-3 & GPT-4.1 Mini & OpenAI & N & 0.547 & 2 & 0 & 1 & 2 \\
-4 & GPT-OSS 20B & OpenRouter & Y & 0.545 & 1 & 1 & 1 & 2 \\
-5 & GPT-4o & OpenAI & N & 0.500 & 2 & 0 & 0 & 3 \\
-6 & DeepSeek V3 & SambaNova & Y & 0.486 & 1 & 1 & 0 & 3 \\
-7 & Kimi K2 & Groq & Y & 0.482 & 1 & 1 & 0 & 3 \\
-8 & Llama 3.1 8B & Groq & Y & 0.478 & 2 & 0 & 0 & 3 \\
-9 & Llama 3.1 8B & SambaNova & Y & 0.478 & 2 & 0 & 0 & 3 \\
-10 & Devstral 123B & NVIDIA & Y & 0.478 & 1 & 1 & 0 & 3 \\
+1 & Mistral 7B v0.2 & NVIDIA & 0.598 & 2 & 1 & 0 & 2 \\
+2 & Gemini 3.1 FL & Gemini & 0.552 & 1 & 2 & 0 & 2 \\
+3 & GPT-4.1 Mini & OpenAI & 0.547 & 2 & 0 & 1 & 2 \\
+4 & GPT-OSS 20B & OpenRouter & 0.545 & 1 & 1 & 1 & 2 \\
+5 & GPT-4o & OpenAI & 0.500 & 2 & 0 & 0 & 3 \\
+6 & DeepSeek V3 & SambaNova & 0.486 & 1 & 1 & 0 & 3 \\
+7 & Kimi K2 & Groq & 0.482 & 1 & 1 & 0 & 3 \\
+8 & Llama 3.1 8B & Groq & 0.478 & 2 & 0 & 0 & 3 \\
+9 & Llama 3.1 8B & SambaNova & 0.478 & 2 & 0 & 0 & 3 \\
+10 & Devstral 123B & NVIDIA & 0.478 & 1 & 1 & 0 & 3 \\
 \midrule
-24 & Gemini 3.0 FL$^*$ & Gemini & N & 0.273 & 0 & 1 & 0 & 4 \\
-25 & Qwen3 32B$^*$ & Groq & Y & 0.136 & 0 & 1 & 0 & 4 \\
-26 & DeepSeek R1$^*$ & SambaNova & Y & 0.000 & 0 & 0 & 0 & 5 \\
+25 & Gemini 3.0 FL$^*$ & Gemini & 0.273 & 0 & 1 & 0 & 4 \\
+26 & Qwen3 32B$^*$ & Groq & 0.136 & 0 & 1 & 0 & 4 \\
+27 & DeepSeek R1$^*$ & SambaNova & 0.000 & 0 & 0 & 0 & 5 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -465,5 +470,49 @@ def test_calculate_discount_0():
 \subsection{Example Mutation Validation Outcome}
 
 Under mutation-based validation, arithmetic and value mutations are typically killed by these assertions---the \texttt{result == 80.0} check catches most arithmetic operator substitutions and constant modifications. However, mutations removing the \texttt{ValueError} guard for out-of-range inputs survive, since no assertion checks exception behavior. The framework surfaces this as a surviving mutant in the \texttt{STATEMENT\_DELETE} class and recommends adding an exception assertion for boundary inputs. This outcome feeds directly into the trust score and refinement suggestions presented to the developer.
+
+\section{Full Model Ranking}
+
+Table~\ref{tab:full-ranking} presents the complete ranking of all 27 models evaluated. Models are sorted by mean trust score descending. Size indicates publicly known parameter count where available. Reasoning models are marked with $^*$.
+
+\begin{table*}[t]
+\centering
+\caption{Complete model ranking by mean trust score across 5 HumanEval+ problems.\\V = VERIFIED, S = SUSPICIOUS, N = NEEDS\_REFINEMENT, R = REJECTED.}
+\label{tab:full-ranking}
+\small
+\begin{tabular}{rllrccccccc}
+\toprule
+\# & \textbf{Model} & \textbf{Provider} & \textbf{Size} & \textbf{OSS} & \textbf{Trust} & \textbf{V} & \textbf{S} & \textbf{N} & \textbf{R} \\
+\midrule
+1 & Mistral 7B v0.2 & NVIDIA & 7B & Y & 0.598 & 2 & 1 & 0 & 2 \\
+2 & Gemini 3.1 Flash Lite & Gemini & --- & N & 0.552 & 1 & 2 & 0 & 2 \\
+3 & GPT-4.1 Mini & OpenAI & --- & N & 0.547 & 2 & 0 & 1 & 2 \\
+4 & GPT-OSS 20B & OpenRouter & 20B & Y & 0.545 & 1 & 1 & 1 & 2 \\
+5 & GPT-4o & OpenAI & --- & N & 0.500 & 2 & 0 & 0 & 3 \\
+6 & DeepSeek V3 & SambaNova & 671B & Y & 0.486 & 1 & 1 & 0 & 3 \\
+7 & Kimi K2 & Groq & --- & Y & 0.482 & 1 & 1 & 0 & 3 \\
+8 & Gemini 2.5 Flash Lite & Gemini & --- & N & 0.478 & 2 & 0 & 0 & 3 \\
+9 & Llama 3.1 8B & Groq & 8B & Y & 0.478 & 2 & 0 & 0 & 3 \\
+10 & Llama 3.1 8B & SambaNova & 8B & Y & 0.478 & 2 & 0 & 0 & 3 \\
+11 & Devstral 123B & NVIDIA & 123B & Y & 0.478 & 1 & 1 & 0 & 3 \\
+12 & o4-mini$^*$ & OpenAI & --- & N & 0.465 & 1 & 1 & 0 & 3 \\
+13 & Qwen 2.5 Coder 7B & NVIDIA & 7B & Y & 0.454 & 1 & 1 & 0 & 3 \\
+14 & Command R & Cohere & 35B & N & 0.453 & 1 & 1 & 0 & 3 \\
+15 & Liquid LFM 1.2B & OpenRouter & 1.2B & Y & 0.446 & 2 & 0 & 0 & 3 \\
+16 & GPT-5.1 & OpenAI & --- & N & 0.441 & 0 & 2 & 0 & 3 \\
+17 & Falcon3 7B & NVIDIA & 7B & Y & 0.440 & 1 & 1 & 0 & 3 \\
+18 & GPT-5.4 & OpenAI & --- & N & 0.422 & 1 & 0 & 1 & 3 \\
+19 & Minimax M2.5 & OpenRouter & --- & N & 0.408 & 1 & 0 & 1 & 3 \\
+20 & Command A & Cohere & 111B & N & 0.400 & 0 & 1 & 1 & 3 \\
+21 & Gemma 3 4B & OpenRouter & 4B & Y & 0.393 & 1 & 0 & 1 & 3 \\
+22 & Nemotron 30B & OpenRouter & 30B & N & 0.380 & 2 & 0 & 0 & 3 \\
+23 & Qwen 3.6+ & OpenRouter & --- & N & 0.314 & 0 & 0 & 2 & 3 \\
+24 & Phi-3 Medium & NVIDIA & 14B & Y & 0.308 & 0 & 1 & 0 & 4 \\
+25 & Gemini 3.0 Flash$^*$ & Gemini & --- & N & 0.273 & 0 & 1 & 0 & 4 \\
+26 & Qwen3 32B$^*$ & Groq & 32B & Y & 0.136 & 0 & 1 & 0 & 4 \\
+27 & DeepSeek R1$^*$ & SambaNova & 671B & Y & 0.000 & 0 & 0 & 0 & 5 \\
+\bottomrule
+\end{tabular}
+\end{table*}
 
 \end{document}
