@@ -1,0 +1,277 @@
+{
+  "completed": [
+    {
+      "name": "Mistral 7B v0.2",
+      "model_id": "mistralai/mistral-7b-instruct-v0.2",
+      "provider": "nvidia",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "api_key_env": "NVIDIA_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/nvidia/nvidia-mistral-7b.json",
+      "problems_completed": 5,
+      "mean_trust": 0.598
+    },
+    {
+      "name": "GPT-OSS 20B",
+      "model_id": "openai/gpt-oss-20b:free",
+      "provider": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/openrouter/gpt-oss-20b-free.json",
+      "problems_completed": 5,
+      "mean_trust": 0.545
+    },
+    {
+      "name": "DeepSeek V3",
+      "model_id": "DeepSeek-V3-0324",
+      "provider": "sambanova",
+      "base_url": "https://api.sambanova.ai/v1",
+      "api_key_env": "SAMBANOVE_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/sambanova/deepseek-v3-0324.json",
+      "problems_completed": 5,
+      "mean_trust": 0.486
+    },
+    {
+      "name": "Llama 3.1 8B (Groq)",
+      "model_id": "llama-3.1-8b-instant",
+      "provider": "groq",
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_key_env": "GROQ_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/groq/llama-3.1-8b-instant.json",
+      "problems_completed": 5,
+      "mean_trust": 0.478
+    },
+    {
+      "name": "Llama 3.1 8B (SambaNova)",
+      "model_id": "Meta-Llama-3.1-8B-Instruct",
+      "provider": "sambanova",
+      "base_url": "https://api.sambanova.ai/v1",
+      "api_key_env": "SAMBANOVE_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/sambanova/llama-3.1-8b-instruct.json",
+      "problems_completed": 5,
+      "mean_trust": 0.478
+    },
+    {
+      "name": "Gemini 2.5 Flash Lite",
+      "model_id": "gemini-2.5-flash-lite",
+      "provider": "gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "api_key_env": "GEMINI_API_KEY",
+      "reasoning": false,
+      "open_source": false,
+      "results_file": "results/gemini/gemini-2.5-flash-lite.json",
+      "problems_completed": 5,
+      "mean_trust": 0.478
+    },
+    {
+      "name": "Command R",
+      "model_id": "command-r-08-2024",
+      "provider": "cohere",
+      "base_url": "https://api.cohere.com/compatibility/v1",
+      "api_key_env": "COHERE_API_KEY",
+      "reasoning": false,
+      "open_source": false,
+      "results_file": "results/cohere/command-r-08-2024.json",
+      "problems_completed": 5,
+      "mean_trust": 0.453
+    },
+    {
+      "name": "Liquid LFM 1.2B",
+      "model_id": "liquid/lfm-2.5-1.2b-instruct:free",
+      "provider": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/openrouter/lfm-2.5-1.2b-instruct-free.json",
+      "problems_completed": 5,
+      "mean_trust": 0.446
+    },
+    {
+      "name": "Kimi K2",
+      "model_id": "moonshotai/kimi-k2-instruct",
+      "provider": "groq",
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_key_env": "GROQ_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/groq/kimi-k2-instruct.json",
+      "problems_completed": 5,
+      "mean_trust": 0.443
+    },
+    {
+      "name": "Minimax M2.5",
+      "model_id": "minimax/minimax-m2.5:free",
+      "provider": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning": false,
+      "open_source": false,
+      "results_file": "results/openrouter/minimax-m2.5-free.json",
+      "problems_completed": 5,
+      "mean_trust": 0.408
+    },
+    {
+      "name": "Command A",
+      "model_id": "command-a-03-2025",
+      "provider": "cohere",
+      "base_url": "https://api.cohere.com/compatibility/v1",
+      "api_key_env": "COHERE_API_KEY",
+      "reasoning": false,
+      "open_source": false,
+      "results_file": "results/cohere/command-a-03-2025.json",
+      "problems_completed": 5,
+      "mean_trust": 0.400
+    },
+    {
+      "name": "Gemma 3 4B",
+      "model_id": "google/gemma-3-4b-it:free",
+      "provider": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/openrouter/gemma-3-4b-it-free.json",
+      "problems_completed": 5,
+      "mean_trust": 0.393
+    },
+    {
+      "name": "Nemotron 30B",
+      "model_id": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "provider": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning": false,
+      "open_source": false,
+      "results_file": "results/openrouter/nemotron-3-nano-30b-free.json",
+      "problems_completed": 5,
+      "mean_trust": 0.380
+    },
+    {
+      "name": "Qwen 3.6+",
+      "model_id": "qwen/qwen3.6-plus:free",
+      "provider": "openrouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning": false,
+      "open_source": false,
+      "results_file": "results/openrouter/qwen3.6-plus-free.json",
+      "problems_completed": 5,
+      "mean_trust": 0.314
+    },
+    {
+      "name": "Phi-3 Medium 128K",
+      "model_id": "microsoft/phi-3-medium-128k-instruct",
+      "provider": "nvidia",
+      "base_url": "https://integrate.api.nvidia.com/v1",
+      "api_key_env": "NVIDIA_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "results_file": "results/nvidia/nvidia-phi3-medium.json",
+      "problems_completed": 5,
+      "mean_trust": 0.308
+    },
+    {
+      "name": "Gemini 2.5 Flash",
+      "model_id": "gemini-2.5-flash",
+      "provider": "gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+      "api_key_env": "GEMINI_API_KEY",
+      "reasoning": true,
+      "open_source": false,
+      "results_file": "results/gemini/gemini-2.5-flash.json",
+      "problems_completed": 4,
+      "mean_trust": 0.218,
+      "notes": "Reasoning model; verbose responses often truncated, breaking JSON"
+    },
+    {
+      "name": "Qwen3 32B",
+      "model_id": "qwen/qwen3-32b",
+      "provider": "groq",
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_key_env": "GROQ_API_KEY",
+      "reasoning": true,
+      "open_source": true,
+      "results_file": "results/groq/qwen3-32b.json",
+      "problems_completed": 5,
+      "mean_trust": 0.136,
+      "notes": "Thinking mode wraps output in <think> tags"
+    },
+    {
+      "name": "DeepSeek R1",
+      "model_id": "DeepSeek-R1-0528",
+      "provider": "sambanova",
+      "base_url": "https://api.sambanova.ai/v1",
+      "api_key_env": "SAMBANOVE_API_KEY",
+      "reasoning": true,
+      "open_source": true,
+      "results_file": "results/sambanova/deepseek-r1-0528.json",
+      "problems_completed": 5,
+      "mean_trust": 0.000,
+      "notes": "Reasoning model; <think> tags break assertion extraction"
+    }
+  ],
+  "rate_limited": [
+    {
+      "name": "GLM 4.5 Air",
+      "model_id": "z-ai/glm-4.5-air:free",
+      "provider": "openrouter",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning": false,
+      "open_source": false,
+      "notes": "Consistently rate limited on free tier"
+    },
+    {
+      "name": "Llama 3.2 3B",
+      "model_id": "meta-llama/llama-3.2-3b-instruct:free",
+      "provider": "openrouter",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "reasoning": false,
+      "open_source": true,
+      "notes": "Consistently rate limited on free tier"
+    },
+    {
+      "name": "Hermes 3 Llama 405B",
+      "model_id": "nousresearch/hermes-3-llama-3.1-405b:free",
+      "provider": "openrouter",
+      "reasoning": false,
+      "open_source": true,
+      "notes": "Consistently rate limited"
+    }
+  ],
+  "unusable": [
+    {
+      "name": "Liquid LFM 1.2B (Thinking)",
+      "model_id": "liquid/lfm-2.5-1.2b-thinking:free",
+      "provider": "openrouter",
+      "reasoning": true,
+      "open_source": true,
+      "notes": "Returns empty responses"
+    },
+    {
+      "name": "Arcee Trinity Mini",
+      "model_id": "arcee-ai/trinity-mini:free",
+      "provider": "openrouter",
+      "reasoning": false,
+      "open_source": true,
+      "notes": "Returns empty responses"
+    },
+    {
+      "name": "StepFun Step 3.5 Flash",
+      "model_id": "stepfun/step-3.5-flash:free",
+      "provider": "openrouter",
+      "reasoning": false,
+      "open_source": false,
+      "notes": "Returns empty responses"
+    }
+  ]
+}
