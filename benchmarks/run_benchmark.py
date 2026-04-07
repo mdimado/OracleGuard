@@ -18,13 +18,16 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
 import time
 import tempfile
 import subprocess
 from dataclasses import dataclass, field, asdict
+from dotenv import load_dotenv
+load_dotenv()
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -36,6 +39,18 @@ from oracleguard import (
 from benchmarks.humaneval_loader import (
     load_humaneval, materialize_all, BenchmarkProblem,
 )
+
+
+class LoggingProvider:
+    """Wraps an LLM provider to capture raw responses."""
+
+    def __init__(self, provider):
+        self.provider = provider
+        self.last_response = ""
+
+    def generate_assertions(self, prompt: str) -> str:
+        self.last_response = self.provider.generate_assertions(prompt)
+        return self.last_response
 
 
 @dataclass
@@ -62,6 +77,12 @@ class ProblemResult:
     # Per-operator breakdown
     killed_by_operator: Dict[str, int] = field(default_factory=dict)
     survived_by_operator: Dict[str, int] = field(default_factory=dict)
+    # LLM response log
+    llm_raw_response: str = ""
+    llm_assertions: List[Dict[str, Any]] = field(default_factory=list)
+    generated_test_code: str = ""
+    # Mutation details
+    mutant_details: List[Dict[str, str]] = field(default_factory=list)
     # Timing
     elapsed_seconds: float = 0.0
     error: Optional[str] = None
@@ -91,13 +112,17 @@ class BenchmarkSummary:
     total_elapsed_seconds: float = 0.0
 
 
-def _create_provider(llm: str, model: Optional[str] = None):
+def _create_provider(llm: str, model: Optional[str] = None,
+                     base_url: Optional[str] = None,
+                     call_interval: float = 0.0):
     """Create an LLM provider from CLI args."""
-    from oracleguard import OpenAIProvider, AnthropicProvider
+    from oracleguard import OpenAIProvider
     if llm == 'openai':
-        return OpenAIProvider(model=model or 'gpt-4')
-    if llm == 'anthropic':
-        return AnthropicProvider(model=model or 'claude-sonnet-4-5-20250929')
+        return OpenAIProvider(
+            model=model or 'gpt-4',
+            base_url=base_url,
+            call_interval=call_interval,
+        )
     return MockLLMProvider()
 
 
@@ -134,12 +159,20 @@ def run_oracleguard_on_problem(
         # Stage 2: Prefix Generation
         prefix = PrefixGenerator(target, source_path).generate()
 
-        # Stage 3: LLM Assertion Generation
+        # Stage 3: LLM Assertion Generation (with response capture)
+        logging_provider = LoggingProvider(provider)
         test_cases = AssertionGenerator(
-            provider, target, prefix
+            logging_provider, target, prefix
         ).generate_test_cases(count=1)
         tc = test_cases[0]
         result.num_assertions = len(tc.assertions)
+        result.llm_raw_response = logging_provider.last_response
+        result.llm_assertions = [
+            {'code': a.assertion_code, 'confidence': a.confidence,
+             'type': a.oracle_type, 'explanation': a.explanation}
+            for a in tc.assertions
+        ]
+        result.generated_test_code = tc.full_test_code
 
         # Stage 4: Differential Testing
         diff_report = DifferentialTester(
@@ -158,6 +191,14 @@ def run_oracleguard_on_problem(
             else:
                 result.survived_by_operator[mr.mutation_type] = \
                     result.survived_by_operator.get(mr.mutation_type, 0) + 1
+            result.mutant_details.append({
+                'id': mr.mutant_id,
+                'type': mr.mutation_type,
+                'original': mr.original_code,
+                'mutated': mr.mutated_code,
+                'killed': mr.killed,
+                'oracle_killed': mr.oracle_killed,
+            })
 
         # Stage 5: Analysis
         verdict = OracleAnalyzer(tc, diff_report, target).analyze()
@@ -398,9 +439,17 @@ def main():
                         help="Number of problems to evaluate (default: 10)")
     parser.add_argument("--full", action="store_true",
                         help="Run on all 164 problems")
-    parser.add_argument("--llm", choices=['openai', 'anthropic', 'mock'],
+    parser.add_argument("--llm", choices=['openai', 'mock'],
                         default='mock', help="LLM provider (default: mock)")
-    parser.add_argument("--model", help="Override LLM model name")
+    parser.add_argument("--model",
+                        default=os.getenv("LLM_MODEL"),
+                        help="Model name (env: LLM_MODEL)")
+    parser.add_argument("--base-url",
+                        default=os.getenv("LLM_BASE_URL"),
+                        help="API base URL (env: LLM_BASE_URL)")
+    parser.add_argument("--call-interval", type=float,
+                        default=float(os.getenv("LLM_CALL_INTERVAL", "4")),
+                        help="Min seconds between API calls (env: LLM_CALL_INTERVAL)")
     parser.add_argument("--mutants", type=int, default=15,
                         help="Mutants per test case (default: 15)")
     parser.add_argument("--faults", type=int, default=10,
@@ -410,7 +459,11 @@ def main():
     args = parser.parse_args()
 
     limit = None if args.full else args.limit
-    provider = _create_provider(args.llm, args.model)
+    provider = _create_provider(
+        args.llm, args.model,
+        base_url=args.base_url,
+        call_interval=args.call_interval,
+    )
 
     print(f"Loading HumanEval+ problems (limit={limit or 'all'})...")
     print(f"LLM provider: {args.llm}" +

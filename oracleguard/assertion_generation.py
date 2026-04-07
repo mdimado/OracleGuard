@@ -1,10 +1,12 @@
 """
 Stage 3: LLM Assertion Generation
 Uses Large Language Models to generate candidate assertions for test oracles.
+Supports any OpenAI-compatible API (OpenAI, OpenRouter, local servers).
 """
 
 import json
 import os
+import time
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
@@ -47,48 +49,85 @@ class LLMProvider(ABC):
 
 
 class OpenAIProvider(LLMProvider):
-    """OpenAI GPT provider."""
+    """OpenAI-compatible provider with built-in rate limiting.
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4"):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model = model or "gpt-4"
+    Works with OpenAI, OpenRouter, and any OpenAI-compatible API by
+    setting base_url. Includes exponential backoff for rate limits.
+    """
+
+    def __init__(self, api_key: Optional[str] = None,
+                 model: str = "gpt-4",
+                 base_url: Optional[str] = None,
+                 max_retries: int = 5,
+                 call_interval: float = 0.0):
+        """
+        Args:
+            api_key: API key. Falls back to OPENAI_API_KEY or OPENROUTER_API_KEY.
+            model: Model identifier.
+            base_url: API base URL. None = OpenAI default. Set to
+                      "https://openrouter.ai/api/v1" for OpenRouter.
+            max_retries: Max retry attempts on rate limit or transient errors.
+            call_interval: Min seconds between API calls (rate limiter).
+        """
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+        self.model = model
+        self.base_url = base_url
+        self.max_retries = max_retries
+        self.call_interval = call_interval
+        self._last_call = 0.0
         if not self.api_key:
-            raise ValueError("OpenAI API key not found. Set OPENAI_API_KEY.")
+            raise ValueError(
+                "API key not found. Set OPENAI_API_KEY or OPENROUTER_API_KEY."
+            )
 
     def generate_assertions(self, prompt: str) -> str:
         import openai
-        client = openai.OpenAI(api_key=self.api_key)
-        response = client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "You are an expert software testing engineer."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=1000,
+
+        # Rate limiter
+        if self.call_interval > 0:
+            elapsed = time.time() - self._last_call
+            if elapsed < self.call_interval:
+                time.sleep(self.call_interval - elapsed)
+
+        kwargs = {"api_key": self.api_key}
+        if self.base_url:
+            kwargs["base_url"] = self.base_url
+
+        client = openai.OpenAI(**kwargs)
+
+        # Use user-only message for max compatibility (some models
+        # don't support system role).
+        full_prompt = (
+            "You are an expert software testing engineer.\n\n" + prompt
         )
-        return response.choices[0].message.content
 
+        for attempt in range(self.max_retries):
+            try:
+                response = client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": full_prompt}],
+                    temperature=0.7,
+                    max_tokens=1000,
+                )
+                self._last_call = time.time()
+                content = response.choices[0].message.content
+                if content:
+                    return content
+            except Exception as e:
+                err_str = str(e)
+                is_rate_limit = '429' in err_str or 'rate' in err_str.lower()
+                if is_rate_limit:
+                    delay = 3.0 * (2 ** attempt)
+                    print(f"    Rate limited, waiting {delay:.0f}s...")
+                    time.sleep(delay)
+                    continue
+                print(f"    API error (attempt {attempt+1}): {err_str[:150]}")
+                if attempt < self.max_retries - 1:
+                    time.sleep(2.0)
+                    continue
+                raise
 
-class AnthropicProvider(LLMProvider):
-    """Anthropic Claude provider."""
-
-    def __init__(self, api_key: Optional[str] = None,
-                 model: str = "claude-sonnet-4-5-20250929"):
-        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
-        self.model = model
-        if not self.api_key:
-            raise ValueError("Anthropic API key not found. Set ANTHROPIC_API_KEY.")
-
-    def generate_assertions(self, prompt: str) -> str:
-        import anthropic
-        client = anthropic.Anthropic(api_key=self.api_key)
-        response = client.messages.create(
-            model=self.model,
-            max_tokens=1000,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return response.content[0].text
+        raise RuntimeError(f"Failed after {self.max_retries} retries")
 
 
 class MockLLMProvider(LLMProvider):
@@ -234,10 +273,26 @@ Provide ONLY the JSON response, no additional text.
             method_call = f"result = {self.metadata.name}({', '.join(args)})"
 
         test_name = f"test_{self.metadata.name}_{index}"
-        lines = [f"def {test_name}():", "    # Setup"]
+
+        # Split setup into module-level imports and function-level code.
+        # `import *` is only valid at module level.
+        module_imports = []
+        func_setup = []
         for line in self.prefix.setup_code.split('\n'):
-            if line.strip():
-                lines.append(f"    {line}")
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith(('import ', 'from ')):
+                module_imports.append(line)
+            else:
+                func_setup.append(line)
+
+        lines = list(module_imports)
+        lines.append("")
+        lines.append(f"def {test_name}():")
+        lines.append("    # Setup")
+        for line in func_setup:
+            lines.append(f"    {line}")
         lines += ["", "    # Execute", f"    {method_call}", "", "    # Assert"]
         for a in assertions:
             lines.append(f"    {a.assertion_code}  # {a.explanation}")

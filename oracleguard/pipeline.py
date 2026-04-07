@@ -8,7 +8,7 @@ from typing import Optional, List
 from oracleguard.static_analysis import StaticAnalyzer, MUTMetadata
 from oracleguard.prefix_generation import PrefixGenerator, AdvancedPrefixGenerator
 from oracleguard.assertion_generation import (
-    LLMProvider, OpenAIProvider, AnthropicProvider, MockLLMProvider,
+    LLMProvider, OpenAIProvider, MockLLMProvider,
     AssertionGenerator, TestCase,
 )
 from oracleguard.differential_testing import DifferentialTester, DifferentialReport
@@ -18,8 +18,11 @@ from oracleguard.analysis import OracleAnalyzer, OracleVerdict
 @dataclass
 class PipelineConfig:
     """Typed configuration for the OracleGuard pipeline."""
-    llm_provider: str = 'mock'
+    llm_provider: str = 'mock'       # 'openai' or 'mock'
     llm_model: Optional[str] = None
+    llm_base_url: Optional[str] = None  # set for OpenRouter etc.
+    llm_api_key: Optional[str] = None
+    call_interval: float = 0.0       # seconds between API calls
     num_mutants: int = 10
     test_count: int = 2
     min_complexity: int = 2
@@ -98,7 +101,8 @@ class OracleGuard:
                 ).run_differential_test(num_mutants=self.config.num_mutants)
                 print(f"  Killed {diff_report.mutants_killed}/"
                       f"{len(diff_report.mutation_results)} "
-                      f"(score {diff_report.mutation_score:.0%})")
+                      f"(total {diff_report.mutation_score:.0%}, "
+                      f"oracle {diff_report.oracle_kill_rate:.0%})")
 
                 # Stage 5
                 print("[Stage 5] Analysis & Refinement")
@@ -115,9 +119,10 @@ class OracleGuard:
 
     def _create_provider(self) -> LLMProvider:
         if self.config.llm_provider == 'openai':
-            return OpenAIProvider(model=self.config.llm_model or 'gpt-4')
-        if self.config.llm_provider == 'anthropic':
-            return AnthropicProvider(
-                model=self.config.llm_model or 'claude-sonnet-4-5-20250929',
+            return OpenAIProvider(
+                api_key=self.config.llm_api_key,
+                model=self.config.llm_model or 'gpt-4',
+                base_url=self.config.llm_base_url,
+                call_interval=self.config.call_interval,
             )
         return MockLLMProvider()

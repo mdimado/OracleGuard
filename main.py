@@ -63,9 +63,14 @@ Examples:
     parser.add_argument("--method", help="Analyze only this method")
 
     llm = parser.add_argument_group("LLM options")
-    llm.add_argument("--llm", choices=["openai", "anthropic", "mock"],
-                     default="mock", help="LLM provider (default: mock)")
-    llm.add_argument("--model", help="Override the default LLM model name")
+    llm.add_argument("--llm", choices=["openai", "mock"],
+                     default="mock",
+                     help="LLM provider (default: mock). 'openai' works with "
+                          "OpenAI, OpenRouter, or any compatible API.")
+    llm.add_argument("--model", help="Model name (default: gpt-4)")
+    llm.add_argument("--base-url", help="API base URL (e.g. https://openrouter.ai/api/v1)")
+    llm.add_argument("--call-interval", type=float, default=0.0,
+                     help="Min seconds between API calls (rate limiter)")
 
     pipeline = parser.add_argument_group("Pipeline options")
     pipeline.add_argument("--mutants", type=int, default=10,
@@ -90,6 +95,8 @@ Examples:
     config = PipelineConfig(
         llm_provider=args.llm,
         llm_model=args.model,
+        llm_base_url=args.base_url,
+        call_interval=args.call_interval,
         num_mutants=args.mutants,
         test_count=args.tests,
         min_complexity=args.min_complexity,

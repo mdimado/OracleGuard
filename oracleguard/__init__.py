@@ -6,7 +6,7 @@ from oracleguard.prefix_generation import (
     EquivalencePrefixGenerator, AdvancedPrefixGenerator, TestPrefix,
 )
 from oracleguard.assertion_generation import (
-    LLMProvider, OpenAIProvider, AnthropicProvider, MockLLMProvider,
+    LLMProvider, OpenAIProvider, MockLLMProvider,
     AssertionGenerator, CandidateAssertion, TestCase,
 )
 from oracleguard.differential_testing import (
@@ -24,7 +24,7 @@ __all__ = [
     'StaticAnalyzer', 'MUTMetadata', 'Parameter',
     'PrefixGenerator', 'BoundaryPrefixGenerator',
     'EquivalencePrefixGenerator', 'AdvancedPrefixGenerator', 'TestPrefix',
-    'LLMProvider', 'OpenAIProvider', 'AnthropicProvider', 'MockLLMProvider',
+    'LLMProvider', 'OpenAIProvider', 'MockLLMProvider',
     'AssertionGenerator', 'CandidateAssertion', 'TestCase',
     'DifferentialTester', 'Mutator', 'DifferentialReport',
     'MutationResult', 'ExecutionTrace', 'MUTATION_OPERATORS',

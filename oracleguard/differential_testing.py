@@ -35,8 +35,9 @@ class MutationResult:
     original_code: str
     mutated_code: str
     test_passed: bool
-    killed: bool
+    killed: bool              # any failure (crash or assertion) = killed
     trace: Optional[ExecutionTrace] = None
+    oracle_killed: bool = False  # only assertion failures count
 
 
 @dataclass
@@ -47,7 +48,8 @@ class DifferentialReport:
     mutation_results: List[MutationResult]
     mutants_killed: int
     mutants_survived: int
-    mutation_score: float
+    mutation_score: float       # any failure = killed
+    oracle_kill_rate: float     # only assertion failures count
     discrepancy_signals: List[str]
 
 
@@ -335,14 +337,17 @@ class DifferentialTester:
 
         results: List[MutationResult] = []
         killed = 0
+        oracle_killed = 0
         for mutant in mutants:
             r = self._test_mutant(mutant)
             results.append(r)
             if r.killed:
                 killed += 1
+            if r.oracle_killed:
+                oracle_killed += 1
 
+        total = len(mutants) if mutants else 1
         survived = len(mutants) - killed
-        score = killed / len(mutants) if mutants else 0.0
 
         return DifferentialReport(
             test_name=self.test_case.test_name,
@@ -350,30 +355,84 @@ class DifferentialTester:
             mutation_results=results,
             mutants_killed=killed,
             mutants_survived=survived,
-            mutation_score=score,
+            mutation_score=killed / total,
+            oracle_kill_rate=oracle_killed / total,
             discrepancy_signals=self._identify_discrepancies(results),
         )
 
-    def _run_test(self, source_code: str, trace_id: str) -> ExecutionTrace:
-        # Strip imports of the module-under-test from the test code.
-        # The mutated source is written directly into the same file, so
-        # re-importing the original module would clobber the mutations.
+    def _prepare_test_code(self) -> str:
+        """Prepare test code for execution against mutated source.
+
+        1. Strip imports of the module-under-test (functions are in same file).
+        2. Wrap the function call in try/except so that mutations which crash
+           the function (TypeError, NameError, etc.) are distinguished from
+           mutations that produce wrong output caught by assertions.
+        """
         module_name = self.source_path.stem
-        test_lines = []
+        lines = []
         for line in self.test_case.full_test_code.splitlines():
             stripped = line.strip()
             if stripped.startswith(f"from {module_name} import"):
                 continue
             if stripped.startswith(f"import {module_name}"):
                 continue
-            test_lines.append(line)
-        clean_test = "\n".join(test_lines)
+            lines.append(line)
+        return "\n".join(lines)
+
+    def _run_test(self, source_code: str, trace_id: str,
+                  catch_crashes: bool = False) -> ExecutionTrace:
+        """Execute test in an isolated subprocess.
+
+        Args:
+            catch_crashes: If True, wrap the function call so that runtime
+                crashes (not assertion errors) are silently caught. The test
+                then passes — meaning the oracle did NOT detect the fault.
+                Used when scoring oracle quality. When False (default),
+                any failure counts as a kill (standard mutation testing).
+        """
+        clean_test = self._prepare_test_code()
+
+        if catch_crashes:
+            # Rewrite the test function to wrap the call in try/except.
+            # AssertionErrors still propagate (oracle caught the fault),
+            # but other exceptions are swallowed (oracle missed it).
+            wrapped_lines = []
+            in_body = False
+            for line in clean_test.splitlines():
+                if line.strip().startswith("def "):
+                    wrapped_lines.append(line)
+                    in_body = True
+                    continue
+                if in_body and line.strip() and not line.startswith(" "):
+                    in_body = False  # left the function
+                if in_body:
+                    # Indent body inside try, re-raise AssertionError
+                    wrapped_lines.append(line)
+                else:
+                    wrapped_lines.append(line)
+
+            # Simpler approach: add a wrapper that calls the test and
+            # distinguishes assertion errors from other exceptions.
+            clean_test_with_wrapper = clean_test + f"""
+
+def _run_with_crash_guard():
+    try:
+        {self.test_case.test_name}()
+    except AssertionError:
+        raise  # Oracle caught the fault — test fails
+    except Exception:
+        pass  # Function crashed — oracle did NOT catch it
+"""
+            call_line = "_run_with_crash_guard()"
+        else:
+            clean_test_with_wrapper = clean_test
+            call_line = f"{self.test_case.test_name}()"
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(source_code)
             f.write("\n\n")
-            f.write(clean_test)
-            f.write(f"\n\n{self.test_case.test_name}()\n")
+            f.write(clean_test_with_wrapper)
+            f.write(f"\n\n{call_line}\n")
             temp_path = Path(f.name)
         try:
             result = subprocess.run(
@@ -388,17 +447,33 @@ class DifferentialTester:
             temp_path.unlink(missing_ok=True)
 
     def _test_mutant(self, mutant: Dict[str, Any]) -> MutationResult:
+        """Test a mutant twice:
+        1. Standard mode — any failure = killed (for mutation score).
+        2. Crash-guarded mode — only assertion failures = killed (for oracle quality).
+
+        We use standard mode for the kill decision, but record both.
+        """
+        # Standard: any failure counts as killed
         trace = self._run_test(mutant['source_code'], mutant['id'])
-        test_passed = trace.exception is None
+        std_killed = trace.exception is not None
+
+        # Oracle-only: only assertion failures count
+        trace_guarded = self._run_test(
+            mutant['source_code'], mutant['id'] + "_guarded",
+            catch_crashes=True,
+        )
+        oracle_killed = trace_guarded.exception is not None
+
         return MutationResult(
             mutant_id=mutant['id'],
             mutation_type=mutant['type'],
             location=mutant['location'],
             original_code=mutant['original'],
             mutated_code=mutant['mutated'],
-            test_passed=test_passed,
-            killed=not test_passed,
+            test_passed=not std_killed,
+            killed=std_killed,
             trace=trace,
+            oracle_killed=oracle_killed,
         )
 
     @staticmethod

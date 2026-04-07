@@ -116,13 +116,17 @@ class OracleAnalyzer:
         )
 
     def _compute_trust_metrics(self) -> TrustMetrics:
-        mutation_score = self.diff_report.mutation_score
+        # Use oracle_kill_rate (assertion-only kills) as the mutation signal.
+        # This measures what the oracle itself catches, not what crashes.
+        mutation_score = self.diff_report.oracle_kill_rate
 
         confidences = [a.confidence for a in self.test_case.assertions]
         llm_confidence = sum(confidences) / len(confidences) if confidences else 0.0
 
+        # Consistency: proportion of oracle kills that are stable (not crashes)
+        oracle_kills = sum(1 for r in self.diff_report.mutation_results if r.oracle_killed)
         total = len(self.diff_report.mutation_results)
-        consistency_score = self.diff_report.mutants_killed / total if total > 0 else 0.0
+        consistency_score = oracle_kills / total if total > 0 else 0.0
 
         assertion_types = {a.oracle_type for a in self.test_case.assertions}
         possible_types = {'value', 'state', 'exception', 'property'}
