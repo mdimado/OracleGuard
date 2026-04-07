@@ -355,10 +355,24 @@ class DifferentialTester:
         )
 
     def _run_test(self, source_code: str, trace_id: str) -> ExecutionTrace:
+        # Strip imports of the module-under-test from the test code.
+        # The mutated source is written directly into the same file, so
+        # re-importing the original module would clobber the mutations.
+        module_name = self.source_path.stem
+        test_lines = []
+        for line in self.test_case.full_test_code.splitlines():
+            stripped = line.strip()
+            if stripped.startswith(f"from {module_name} import"):
+                continue
+            if stripped.startswith(f"import {module_name}"):
+                continue
+            test_lines.append(line)
+        clean_test = "\n".join(test_lines)
+
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(source_code)
             f.write("\n\n")
-            f.write(self.test_case.full_test_code)
+            f.write(clean_test)
             f.write(f"\n\n{self.test_case.test_name}()\n")
             temp_path = Path(f.name)
         try:

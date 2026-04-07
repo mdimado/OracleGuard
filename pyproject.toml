@@ -3,7 +3,10 @@ name = "oracleguard"
 version = "0.1.0"
 description = "Trust-Scored LLM-Based Test Oracle Generation with Differential Validation"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "datasets>=4.8.4",
+    "evalplus>=0.3.1",
+]
 
 [project.optional-dependencies]
 openai = ["openai>=1.0"]
