@@ -1,0 +1,297 @@
+{
+  "summary": {
+    "total_problems": 2,
+    "problems_analyzed": 2,
+    "problems_skipped": 0,
+    "problems_errored": 0,
+    "verified_count": 1,
+    "suspicious_count": 0,
+    "needs_refinement_count": 0,
+    "rejected_count": 1,
+    "mean_trust_score": 0.55375,
+    "mean_mutation_score": 1.0,
+    "mean_og_fault_detection_rate": 1.0,
+    "mean_gt_fault_detection_rate": 1.0,
+    "survived_by_operator": {},
+    "killed_by_operator": {
+      "return_value_mutation": 8,
+      "relational_operator": 3,
+      "statement_deletion": 4,
+      "constant_replacement": 4,
+      "arithmetic_operator": 1
+    },
+    "total_elapsed_seconds": 211.5469799041748
+  },
+  "results": [
+    {
+      "task_id": "HumanEval/0",
+      "entry_point": "has_close_elements",
+      "complexity": 3,
+      "num_methods_found": 1,
+      "trust_score": 0.2575,
+      "status": "rejected",
+      "mutation_score": 1.0,
+      "mutants_killed": 10,
+      "mutants_total": 10,
+      "num_assertions": 3,
+      "weaknesses": [],
+      "ground_truth_asserts": 7,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 10,
+      "gt_misses_seeded_faults": 0,
+      "killed_by_operator": {
+        "return_value_mutation": 3,
+        "relational_operator": 1,
+        "statement_deletion": 4,
+        "constant_replacement": 1,
+        "arithmetic_operator": 1
+      },
+      "survived_by_operator": {},
+      "llm_raw_response": "{\n  \"assertions\": [\n    {\n      \"code\": \"assert isinstance(result, bool), \\\"Return value must be a boolean\\\"\",\n      \"explanation\": \"Validates that the function adheres to its type hint and returns a bool as specified in the signature.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert result is True or result is False, \\\"Return value must be a strict boolean instance\\\"\",\n      \"explanation\": \"Ensures the function returns exactly True or False, avoiding potential truthy/falsy coercion issues (e.g., returning 0 or 1).\",\n      \"confidence\": 0.95,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"with self.assertRaises(TypeError): has_close_elements(arg_numbers, arg_threshold)\",\n      \"explanation\": \"Confirms that passing a non-iterable type (float) instead of a list correctly raises a TypeError when sorted() is called, ensuring proper failure behavior for invalid inputs.\",\n      \"confidence\": 0.9,\n      \"type\": \"exception\"\n    }\n  ]\n}",
+      "llm_assertions": [
+        {
+          "code": "assert isinstance(result, bool), \"Return value must be a boolean\"",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "Validates that the function adheres to its type hint and returns a bool as specified in the signature."
+        },
+        {
+          "code": "assert result is True or result is False, \"Return value must be a strict boolean instance\"",
+          "confidence": 0.95,
+          "type": "value",
+          "explanation": "Ensures the function returns exactly True or False, avoiding potential truthy/falsy coercion issues (e.g., returning 0 or 1)."
+        },
+        {
+          "code": "with self.assertRaises(TypeError): has_close_elements(arg_numbers, arg_threshold)",
+          "confidence": 0.9,
+          "type": "exception",
+          "explanation": "Confirms that passing a non-iterable type (float) instead of a list correctly raises a TypeError when sorted() is called, ensuring proper failure behavior for invalid inputs."
+        }
+      ],
+      "generated_test_code": "from humaneval_0 import *\nimport unittest\nfrom unittest.mock import Mock, patch\nfrom typing import *\n\ndef test_has_close_elements_0():\n    # Setup\n    arg_numbers = 71.89\n    arg_threshold = 97.05\n\n    # Execute\n    result = has_close_elements(arg_numbers, arg_threshold)\n\n    # Assert\n    assert isinstance(result, bool), \"Return value must be a boolean\"  # Validates that the function adheres to its type hint and returns a bool as specified in the signature.\n    assert result is True or result is False, \"Return value must be a strict boolean instance\"  # Ensures the function returns exactly True or False, avoiding potential truthy/falsy coercion issues (e.g., returning 0 or 1).\n    with self.assertRaises(TypeError): has_close_elements(arg_numbers, arg_threshold)  # Confirms that passing a non-iterable type (float) instead of a list correctly raises a TypeError when sorted() is called, ensuring proper failure behavior for invalid inputs.",
+      "mutant_details": [
+        {
+          "id": "mutant_0",
+          "type": "return_value_mutation",
+          "original": "return False",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_1",
+          "type": "relational_operator",
+          "original": "sorted_numbers[i + 1] - sorted_numbers[i] < threshold",
+          "mutated": "sorted_numbers[i + 1] - sorted_numbers[i] > threshold",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_2",
+          "type": "statement_deletion",
+          "original": "sorted_numbers = sorted(numbers)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_3",
+          "type": "statement_deletion",
+          "original": "return False",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_4",
+          "type": "statement_deletion",
+          "original": "for i in range(len(sorted_numbers) - 1):\n    if sorted_numbers[i + 1] - sorted_numbers[i] < threshold:\n        return True",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_5",
+          "type": "statement_deletion",
+          "original": "sorted_numbers = sorted(numbers)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_6",
+          "type": "return_value_mutation",
+          "original": "return False",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_7",
+          "type": "constant_replacement",
+          "original": "1",
+          "mutated": "2",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_8",
+          "type": "arithmetic_operator",
+          "original": "i + 1",
+          "mutated": "i - 1",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_9",
+          "type": "return_value_mutation",
+          "original": "return True",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": false
+        }
+      ],
+      "elapsed_seconds": 126.33251094818115,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/1",
+      "entry_point": "separate_paren_groups",
+      "complexity": 7,
+      "num_methods_found": 1,
+      "trust_score": 0.85,
+      "status": "verified",
+      "mutation_score": 1.0,
+      "mutants_killed": 10,
+      "mutants_total": 10,
+      "num_assertions": 4,
+      "weaknesses": [
+        "No exception assertions for a complex method"
+      ],
+      "ground_truth_asserts": 4,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 10,
+      "gt_misses_seeded_faults": 0,
+      "killed_by_operator": {
+        "return_value_mutation": 5,
+        "relational_operator": 2,
+        "constant_replacement": 3
+      },
+      "survived_by_operator": {},
+      "llm_raw_response": "{\n  \"assertions\": [\n    {\n      \"code\": \"assert isinstance(result, list)\",\n      \"explanation\": \"Validates that the return type matches the function signature annotation List[str].\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert result == ['()', '(())', '(()())']\",\n      \"explanation\": \"Verifies correct output against the primary documented example, ensuring groups are properly split and spaces are ignored.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert all(isinstance(item, str) for item in result)\",\n      \"explanation\": \"Confirms that each element in the returned list is a string, satisfying the List[str] contract and type validation requirements.\",\n      \"confidence\": 0.95,\n      \"type\": \"property\"\n    },\n    {\n      \"code\": \"assert all(s.count('(') == s.count(')') for s in result)\",\n      \"explanation\": \"Ensures each separated group is properly balanced, which is a core functional requirement and boundary condition of the specification.\",\n      \"confidence\": 0.9,\n      \"type\": \"property\"\n    }\n  ]\n}",
+      "llm_assertions": [
+        {
+          "code": "assert isinstance(result, list)",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "Validates that the return type matches the function signature annotation List[str]."
+        },
+        {
+          "code": "assert result == ['()', '(())', '(()())']",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "Verifies correct output against the primary documented example, ensuring groups are properly split and spaces are ignored."
+        },
+        {
+          "code": "assert all(isinstance(item, str) for item in result)",
+          "confidence": 0.95,
+          "type": "property",
+          "explanation": "Confirms that each element in the returned list is a string, satisfying the List[str] contract and type validation requirements."
+        },
+        {
+          "code": "assert all(s.count('(') == s.count(')') for s in result)",
+          "confidence": 0.9,
+          "type": "property",
+          "explanation": "Ensures each separated group is properly balanced, which is a core functional requirement and boundary condition of the specification."
+        }
+      ],
+      "generated_test_code": "from humaneval_1 import *\nimport unittest\nfrom unittest.mock import Mock, patch\nfrom typing import *\n\ndef test_separate_paren_groups_0():\n    # Setup\n    arg_paren_string = \"test_paren_string\"\n    mock_results_append = Mock()\n\n    # Execute\n    result = separate_paren_groups(arg_paren_string)\n\n    # Assert\n    assert isinstance(result, list)  # Validates that the return type matches the function signature annotation List[str].\n    assert result == ['()', '(())', '(()())']  # Verifies correct output against the primary documented example, ensuring groups are properly split and spaces are ignored.\n    assert all(isinstance(item, str) for item in result)  # Confirms that each element in the returned list is a string, satisfying the List[str] contract and type validation requirements.\n    assert all(s.count('(') == s.count(')') for s in result)  # Ensures each separated group is properly balanced, which is a core functional requirement and boundary condition of the specification.",
+      "mutant_details": [
+        {
+          "id": "mutant_0",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_1",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return ''",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_2",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return ''",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_3",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return ''",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_4",
+          "type": "relational_operator",
+          "original": "cnt == 0",
+          "mutated": "cnt != 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_5",
+          "type": "relational_operator",
+          "original": "cnt == 0",
+          "mutated": "cnt != 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_6",
+          "type": "constant_replacement",
+          "original": "0",
+          "mutated": "1",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_7",
+          "type": "constant_replacement",
+          "original": "\" Input to this function is a string containing multiple groups of nested parentheses. Your goal is to\\n    separate those group into separate strings and return the list of those.\\n    Separate groups are balanced (each open brace is properly closed) and not nested within each other\\n    Ignore any spaces in the input string.\\n    >>> separate_paren_groups('( ) (( )) (( )( ))')\\n    ['()', '(())', '(()())']\\n    \"",
+          "mutated": "\" Input to this function is a string containing multiple groups of nested parentheses. Your goal is to\\n    separate those group into separate strings and return the list of those.\\n    Separate groups are balanced (each open brace is properly closed) and not nested within each other\\n    Ignore any spaces in the input string.\\n    >>> separate_paren_groups('( ) (( )) (( )( ))')\\n    ['()', '(())', '(()())']\\n    x\"",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_8",
+          "type": "constant_replacement",
+          "original": "' '",
+          "mutated": "' x'",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_9",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": true
+        }
+      ],
+      "elapsed_seconds": 85.21446895599365,
+      "error": null
+    }
+  ]
+}

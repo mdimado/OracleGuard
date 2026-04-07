@@ -1,0 +1,173 @@
+{
+  "summary": {
+    "total_problems": 5,
+    "problems_analyzed": 5,
+    "problems_skipped": 0,
+    "problems_errored": 0,
+    "verified_count": 0,
+    "suspicious_count": 2,
+    "needs_refinement_count": 0,
+    "rejected_count": 3,
+    "mean_trust_score": 0.4456666666666667,
+    "mean_mutation_score": 0.9066666666666666,
+    "mean_og_fault_detection_rate": 1.0,
+    "mean_gt_fault_detection_rate": 0.8800000000000001,
+    "survived_by_operator": {
+      "constant_replacement": 7
+    },
+    "killed_by_operator": {
+      "constant_replacement": 8,
+      "relational_operator": 10,
+      "arithmetic_operator": 12,
+      "return_value_mutation": 22,
+      "statement_deletion": 16
+    },
+    "total_elapsed_seconds": 465.27765250205994
+  },
+  "results": [
+    {
+      "task_id": "HumanEval/0",
+      "entry_point": "has_close_elements",
+      "complexity": 3,
+      "num_methods_found": 1,
+      "trust_score": 0.25416666666666665,
+      "status": "rejected",
+      "mutation_score": 1.0,
+      "mutants_killed": 15,
+      "mutants_total": 15,
+      "num_assertions": 3,
+      "weaknesses": [],
+      "ground_truth_asserts": 7,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 8,
+      "gt_misses_seeded_faults": 2,
+      "killed_by_operator": {
+        "constant_replacement": 2,
+        "relational_operator": 3,
+        "arithmetic_operator": 4,
+        "return_value_mutation": 4,
+        "statement_deletion": 2
+      },
+      "survived_by_operator": {},
+      "elapsed_seconds": 92.88852119445801,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/1",
+      "entry_point": "separate_paren_groups",
+      "complexity": 7,
+      "num_methods_found": 1,
+      "trust_score": 0.695,
+      "status": "suspicious",
+      "mutation_score": 0.7333333333333333,
+      "mutants_killed": 11,
+      "mutants_total": 15,
+      "num_assertions": 4,
+      "weaknesses": [
+        "4 value precision mutant(s) survived \u2014 weak value precision assertions",
+        "No exception assertions for a complex method",
+        "Differential signal: Multiple constant_replacement mutants survived (4)"
+      ],
+      "ground_truth_asserts": 4,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 10,
+      "gt_misses_seeded_faults": 0,
+      "killed_by_operator": {
+        "return_value_mutation": 3,
+        "relational_operator": 7,
+        "statement_deletion": 1
+      },
+      "survived_by_operator": {
+        "constant_replacement": 4
+      },
+      "elapsed_seconds": 96.03792214393616,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/2",
+      "entry_point": "truncate_number",
+      "complexity": 1,
+      "num_methods_found": 1,
+      "trust_score": 0.7525,
+      "status": "suspicious",
+      "mutation_score": 0.8,
+      "mutants_killed": 12,
+      "mutants_total": 15,
+      "num_assertions": 3,
+      "weaknesses": [
+        "3 value precision mutant(s) survived \u2014 weak value precision assertions",
+        "Differential signal: Multiple constant_replacement mutants survived (3)"
+      ],
+      "ground_truth_asserts": 3,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 9,
+      "gt_misses_seeded_faults": 1,
+      "killed_by_operator": {
+        "arithmetic_operator": 4,
+        "statement_deletion": 4,
+        "return_value_mutation": 4
+      },
+      "survived_by_operator": {
+        "constant_replacement": 3
+      },
+      "elapsed_seconds": 46.69859004020691,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/3",
+      "entry_point": "below_zero",
+      "complexity": 3,
+      "num_methods_found": 1,
+      "trust_score": 0.26083333333333336,
+      "status": "rejected",
+      "mutation_score": 1.0,
+      "mutants_killed": 15,
+      "mutants_total": 15,
+      "num_assertions": 3,
+      "weaknesses": [],
+      "ground_truth_asserts": 6,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 10,
+      "gt_misses_seeded_faults": 0,
+      "killed_by_operator": {
+        "return_value_mutation": 7,
+        "statement_deletion": 4,
+        "constant_replacement": 4
+      },
+      "survived_by_operator": {},
+      "elapsed_seconds": 118.34229803085327,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/4",
+      "entry_point": "mean_absolute_deviation",
+      "complexity": 1,
+      "num_methods_found": 1,
+      "trust_score": 0.26583333333333337,
+      "status": "rejected",
+      "mutation_score": 1.0,
+      "mutants_killed": 15,
+      "mutants_total": 15,
+      "num_assertions": 3,
+      "weaknesses": [],
+      "ground_truth_asserts": 3,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 7,
+      "gt_misses_seeded_faults": 3,
+      "killed_by_operator": {
+        "arithmetic_operator": 4,
+        "statement_deletion": 5,
+        "return_value_mutation": 4,
+        "constant_replacement": 2
+      },
+      "survived_by_operator": {},
+      "elapsed_seconds": 111.31032109260559,
+      "error": null
+    }
+  ]
+}

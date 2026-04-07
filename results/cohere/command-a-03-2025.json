@@ -1,0 +1,921 @@
+{
+  "summary": {
+    "total_problems": 5,
+    "problems_analyzed": 5,
+    "problems_skipped": 0,
+    "problems_errored": 0,
+    "verified_count": 0,
+    "suspicious_count": 1,
+    "needs_refinement_count": 1,
+    "rejected_count": 3,
+    "mean_trust_score": 0.40049999999999997,
+    "mean_mutation_score": 0.9466666666666667,
+    "mean_og_fault_detection_rate": 1.0,
+    "mean_gt_fault_detection_rate": 0.82,
+    "survived_by_operator": {
+      "constant_replacement": 4
+    },
+    "killed_by_operator": {
+      "constant_replacement": 14,
+      "statement_deletion": 13,
+      "return_value_mutation": 24,
+      "relational_operator": 15,
+      "arithmetic_operator": 5
+    },
+    "total_elapsed_seconds": 95.64835476875305
+  },
+  "results": [
+    {
+      "task_id": "HumanEval/0",
+      "entry_point": "has_close_elements",
+      "complexity": 3,
+      "num_methods_found": 1,
+      "trust_score": 0.23,
+      "status": "rejected",
+      "mutation_score": 1.0,
+      "mutants_killed": 15,
+      "mutants_total": 15,
+      "num_assertions": 4,
+      "weaknesses": [],
+      "ground_truth_asserts": 7,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 10,
+      "gt_misses_seeded_faults": 0,
+      "killed_by_operator": {
+        "constant_replacement": 5,
+        "statement_deletion": 2,
+        "return_value_mutation": 2,
+        "relational_operator": 5,
+        "arithmetic_operator": 1
+      },
+      "survived_by_operator": {},
+      "llm_raw_response": "{\n  \"assertions\": [\n    {\n      \"code\": \"assert isinstance(result, bool)\",\n      \"explanation\": \"The function should return a boolean value indicating whether any two numbers are closer than the threshold.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert has_close_elements([1.0, 2.0, 3.0], 0.5) == False\",\n      \"explanation\": \"Test case with numbers not close enough to each other, ensuring the function returns False.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3) == True\",\n      \"explanation\": \"Test case with numbers closer than the threshold, ensuring the function returns True.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert has_close_elements([], 1.0) == False\",\n      \"explanation\": \"Test case with an empty list, ensuring the function handles edge cases correctly.\",\n      \"confidence\": 1.0,\n      \"type\": \"boundary\"\n    }\n  ]\n}",
+      "llm_assertions": [
+        {
+          "code": "assert isinstance(result, bool)",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "The function should return a boolean value indicating whether any two numbers are closer than the threshold."
+        },
+        {
+          "code": "assert has_close_elements([1.0, 2.0, 3.0], 0.5) == False",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "Test case with numbers not close enough to each other, ensuring the function returns False."
+        },
+        {
+          "code": "assert has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3) == True",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "Test case with numbers closer than the threshold, ensuring the function returns True."
+        },
+        {
+          "code": "assert has_close_elements([], 1.0) == False",
+          "confidence": 1.0,
+          "type": "boundary",
+          "explanation": "Test case with an empty list, ensuring the function handles edge cases correctly."
+        }
+      ],
+      "generated_test_code": "from humaneval_0 import *\nimport unittest\nfrom unittest.mock import Mock, patch\nfrom typing import *\n\ndef test_has_close_elements_0():\n    # Setup\n    arg_numbers = 34.27\n    arg_threshold = 25.89\n\n    # Execute\n    result = has_close_elements(arg_numbers, arg_threshold)\n\n    # Assert\n    assert isinstance(result, bool)  # The function should return a boolean value indicating whether any two numbers are closer than the threshold.\n    assert has_close_elements([1.0, 2.0, 3.0], 0.5) == False  # Test case with numbers not close enough to each other, ensuring the function returns False.\n    assert has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3) == True  # Test case with numbers closer than the threshold, ensuring the function returns True.\n    assert has_close_elements([], 1.0) == False  # Test case with an empty list, ensuring the function handles edge cases correctly.",
+      "mutant_details": [
+        {
+          "id": "mutant_0",
+          "type": "constant_replacement",
+          "original": "' Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    '",
+          "mutated": "' Check if in given list of numbers, are any two numbers closer to each other than\\n    given threshold.\\n    >>> has_close_elements([1.0, 2.0, 3.0], 0.5)\\n    False\\n    >>> has_close_elements([1.0, 2.8, 3.0, 4.0, 5.0, 2.0], 0.3)\\n    True\\n    x'",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_1",
+          "type": "statement_deletion",
+          "original": "return False",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_2",
+          "type": "statement_deletion",
+          "original": "for i in range(len(sorted_numbers) - 1):\n    if sorted_numbers[i + 1] - sorted_numbers[i] < threshold:\n        return True",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_3",
+          "type": "return_value_mutation",
+          "original": "return True",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_4",
+          "type": "constant_replacement",
+          "original": "1",
+          "mutated": "2",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_5",
+          "type": "relational_operator",
+          "original": "sorted_numbers[i + 1] - sorted_numbers[i] < threshold",
+          "mutated": "sorted_numbers[i + 1] - sorted_numbers[i] > threshold",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_6",
+          "type": "constant_replacement",
+          "original": "1",
+          "mutated": "2",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_7",
+          "type": "relational_operator",
+          "original": "sorted_numbers[i + 1] - sorted_numbers[i] < threshold",
+          "mutated": "sorted_numbers[i + 1] - sorted_numbers[i] > threshold",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_8",
+          "type": "relational_operator",
+          "original": "sorted_numbers[i + 1] - sorted_numbers[i] < threshold",
+          "mutated": "sorted_numbers[i + 1] - sorted_numbers[i] > threshold",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_9",
+          "type": "arithmetic_operator",
+          "original": "len(sorted_numbers) - 1",
+          "mutated": "len(sorted_numbers) + 1",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_10",
+          "type": "constant_replacement",
+          "original": "False",
+          "mutated": "True",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_11",
+          "type": "relational_operator",
+          "original": "sorted_numbers[i + 1] - sorted_numbers[i] < threshold",
+          "mutated": "sorted_numbers[i + 1] - sorted_numbers[i] > threshold",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_12",
+          "type": "return_value_mutation",
+          "original": "return False",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_13",
+          "type": "relational_operator",
+          "original": "sorted_numbers[i + 1] - sorted_numbers[i] < threshold",
+          "mutated": "sorted_numbers[i + 1] - sorted_numbers[i] > threshold",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_14",
+          "type": "constant_replacement",
+          "original": "1",
+          "mutated": "2",
+          "killed": true,
+          "oracle_killed": false
+        }
+      ],
+      "elapsed_seconds": 11.820161819458008,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/1",
+      "entry_point": "separate_paren_groups",
+      "complexity": 7,
+      "num_methods_found": 1,
+      "trust_score": 0.77,
+      "status": "suspicious",
+      "mutation_score": 1.0,
+      "mutants_killed": 15,
+      "mutants_total": 15,
+      "num_assertions": 4,
+      "weaknesses": [
+        "No exception assertions for a complex method"
+      ],
+      "ground_truth_asserts": 4,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 9,
+      "gt_misses_seeded_faults": 1,
+      "killed_by_operator": {
+        "constant_replacement": 3,
+        "return_value_mutation": 6,
+        "statement_deletion": 1,
+        "relational_operator": 5
+      },
+      "survived_by_operator": {},
+      "llm_raw_response": "```json\n{\n  \"assertions\": [\n    {\n      \"code\": \"assert isinstance(result, list)\",\n      \"explanation\": \"The function should return a list of strings, so the return type must be validated.\",\n      \"confidence\": 1.0,\n      \"type\": \"type\"\n    },\n    {\n      \"code\": \"assert all(isinstance(group, str) for group in result)\",\n      \"explanation\": \"Each element in the returned list should be a string, as the function separates groups of parentheses into individual strings.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert result == separate_paren_groups('( ) (( )) (( )( ))') == ['()', '(())', '(()())']\",\n      \"explanation\": \"This assertion checks the correctness of the function's output against a known input, ensuring it separates groups correctly.\",\n      \"confidence\": 0.9,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert separate_paren_groups('') == []\",\n      \"explanation\": \"An empty input string should return an empty list, testing the boundary condition of no input.\",\n      \"confidence\": 0.9,\n      \"type\": \"boundary\"\n    }\n  ]\n}\n```",
+      "llm_assertions": [
+        {
+          "code": "assert isinstance(result, list)",
+          "confidence": 1.0,
+          "type": "type",
+          "explanation": "The function should return a list of strings, so the return type must be validated."
+        },
+        {
+          "code": "assert all(isinstance(group, str) for group in result)",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "Each element in the returned list should be a string, as the function separates groups of parentheses into individual strings."
+        },
+        {
+          "code": "assert result == separate_paren_groups('( ) (( )) (( )( ))') == ['()', '(())', '(()())']",
+          "confidence": 0.9,
+          "type": "value",
+          "explanation": "This assertion checks the correctness of the function's output against a known input, ensuring it separates groups correctly."
+        },
+        {
+          "code": "assert separate_paren_groups('') == []",
+          "confidence": 0.9,
+          "type": "boundary",
+          "explanation": "An empty input string should return an empty list, testing the boundary condition of no input."
+        }
+      ],
+      "generated_test_code": "from humaneval_1 import *\nimport unittest\nfrom unittest.mock import Mock, patch\nfrom typing import *\n\ndef test_separate_paren_groups_0():\n    # Setup\n    arg_paren_string = \"test_paren_string\"\n    mock_results_append = Mock()\n\n    # Execute\n    result = separate_paren_groups(arg_paren_string)\n\n    # Assert\n    assert isinstance(result, list)  # The function should return a list of strings, so the return type must be validated.\n    assert all(isinstance(group, str) for group in result)  # Each element in the returned list should be a string, as the function separates groups of parentheses into individual strings.\n    assert result == separate_paren_groups('( ) (( )) (( )( ))') == ['()', '(())', '(()())']  # This assertion checks the correctness of the function's output against a known input, ensuring it separates groups correctly.\n    assert separate_paren_groups('') == []  # An empty input string should return an empty list, testing the boundary condition of no input.",
+      "mutant_details": [
+        {
+          "id": "mutant_0",
+          "type": "constant_replacement",
+          "original": "''",
+          "mutated": "'x'",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_1",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_2",
+          "type": "statement_deletion",
+          "original": "cnt, group, results = (0, '', [])",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_3",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_4",
+          "type": "constant_replacement",
+          "original": "''",
+          "mutated": "'x'",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_5",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return ''",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_6",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_7",
+          "type": "constant_replacement",
+          "original": "1",
+          "mutated": "2",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_8",
+          "type": "relational_operator",
+          "original": "cnt == 0",
+          "mutated": "cnt != 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_9",
+          "type": "relational_operator",
+          "original": "ch != ' '",
+          "mutated": "ch == ' '",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_10",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_11",
+          "type": "relational_operator",
+          "original": "group != ''",
+          "mutated": "group == ''",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_12",
+          "type": "return_value_mutation",
+          "original": "return results",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_13",
+          "type": "relational_operator",
+          "original": "cnt == 0",
+          "mutated": "cnt != 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_14",
+          "type": "relational_operator",
+          "original": "cnt == 0",
+          "mutated": "cnt != 0",
+          "killed": true,
+          "oracle_killed": true
+        }
+      ],
+      "elapsed_seconds": 10.492700815200806,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/2",
+      "entry_point": "truncate_number",
+      "complexity": 1,
+      "num_methods_found": 1,
+      "trust_score": 0.505,
+      "status": "needs_refinement",
+      "mutation_score": 0.7333333333333333,
+      "mutants_killed": 11,
+      "mutants_total": 15,
+      "num_assertions": 4,
+      "weaknesses": [
+        "4 value precision mutant(s) survived \u2014 weak value precision assertions",
+        "Differential signal: Multiple constant_replacement mutants survived (4)"
+      ],
+      "ground_truth_asserts": 3,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 6,
+      "gt_misses_seeded_faults": 4,
+      "killed_by_operator": {
+        "statement_deletion": 3,
+        "return_value_mutation": 6,
+        "arithmetic_operator": 2
+      },
+      "survived_by_operator": {
+        "constant_replacement": 4
+      },
+      "llm_raw_response": "```json\n{\n  \"assertions\": [\n    {\n      \"code\": \"assert 0 <= result < 1\",\n      \"explanation\": \"The decimal part of a number should always be between 0 (inclusive) and 1 (exclusive).\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert isinstance(result, float)\",\n      \"explanation\": \"The function should return a float, as it is designed to handle floating-point numbers.\",\n      \"confidence\": 1.0,\n      \"type\": \"type\"\n    },\n    {\n      \"code\": \"assert truncate_number(0.0) == 0.0\",\n      \"explanation\": \"Test boundary condition where the input number is exactly 0.0, ensuring the function handles it correctly.\",\n      \"confidence\": 0.9,\n      \"type\": \"boundary\"\n    },\n    {\n      \"code\": \"assert truncate_number(1.0) == 0.0\",\n      \"explanation\": \"Test boundary condition where the input number is exactly 1.0, ensuring the function returns 0.0 as the decimal part.\",\n      \"confidence\": 0.9,\n      \"type\": \"boundary\"\n    }\n  ]\n}\n```",
+      "llm_assertions": [
+        {
+          "code": "assert 0 <= result < 1",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "The decimal part of a number should always be between 0 (inclusive) and 1 (exclusive)."
+        },
+        {
+          "code": "assert isinstance(result, float)",
+          "confidence": 1.0,
+          "type": "type",
+          "explanation": "The function should return a float, as it is designed to handle floating-point numbers."
+        },
+        {
+          "code": "assert truncate_number(0.0) == 0.0",
+          "confidence": 0.9,
+          "type": "boundary",
+          "explanation": "Test boundary condition where the input number is exactly 0.0, ensuring the function handles it correctly."
+        },
+        {
+          "code": "assert truncate_number(1.0) == 0.0",
+          "confidence": 0.9,
+          "type": "boundary",
+          "explanation": "Test boundary condition where the input number is exactly 1.0, ensuring the function returns 0.0 as the decimal part."
+        }
+      ],
+      "generated_test_code": "from humaneval_2 import *\nimport unittest\nfrom unittest.mock import Mock, patch\nfrom typing import *\n\ndef test_truncate_number_0():\n    # Setup\n    arg_number = 51.1\n\n    # Execute\n    result = truncate_number(arg_number)\n\n    # Assert\n    assert 0 <= result < 1  # The decimal part of a number should always be between 0 (inclusive) and 1 (exclusive).\n    assert isinstance(result, float)  # The function should return a float, as it is designed to handle floating-point numbers.\n    assert truncate_number(0.0) == 0.0  # Test boundary condition where the input number is exactly 0.0, ensuring the function handles it correctly.\n    assert truncate_number(1.0) == 0.0  # Test boundary condition where the input number is exactly 1.0, ensuring the function returns 0.0 as the decimal part.",
+      "mutant_details": [
+        {
+          "id": "mutant_0",
+          "type": "constant_replacement",
+          "original": "' Given a positive floating point number, it can be decomposed into\\n    and integer part (largest integer smaller than given number) and decimals\\n    (leftover part always smaller than 1).\\n\\n    Return the decimal part of the number.\\n    >>> truncate_number(3.5)\\n    0.5\\n    '",
+          "mutated": "' Given a positive floating point number, it can be decomposed into\\n    and integer part (largest integer smaller than given number) and decimals\\n    (leftover part always smaller than 1).\\n\\n    Return the decimal part of the number.\\n    >>> truncate_number(3.5)\\n    0.5\\n    x'",
+          "killed": false,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_1",
+          "type": "statement_deletion",
+          "original": "return number - int(number)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_2",
+          "type": "constant_replacement",
+          "original": "' Given a positive floating point number, it can be decomposed into\\n    and integer part (largest integer smaller than given number) and decimals\\n    (leftover part always smaller than 1).\\n\\n    Return the decimal part of the number.\\n    >>> truncate_number(3.5)\\n    0.5\\n    '",
+          "mutated": "' Given a positive floating point number, it can be decomposed into\\n    and integer part (largest integer smaller than given number) and decimals\\n    (leftover part always smaller than 1).\\n\\n    Return the decimal part of the number.\\n    >>> truncate_number(3.5)\\n    0.5\\n    x'",
+          "killed": false,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_3",
+          "type": "return_value_mutation",
+          "original": "return number - int(number)",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_4",
+          "type": "return_value_mutation",
+          "original": "return number - int(number)",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_5",
+          "type": "arithmetic_operator",
+          "original": "number - int(number)",
+          "mutated": "number + int(number)",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_6",
+          "type": "statement_deletion",
+          "original": "return number - int(number)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_7",
+          "type": "return_value_mutation",
+          "original": "return number - int(number)",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_8",
+          "type": "constant_replacement",
+          "original": "' Given a positive floating point number, it can be decomposed into\\n    and integer part (largest integer smaller than given number) and decimals\\n    (leftover part always smaller than 1).\\n\\n    Return the decimal part of the number.\\n    >>> truncate_number(3.5)\\n    0.5\\n    '",
+          "mutated": "' Given a positive floating point number, it can be decomposed into\\n    and integer part (largest integer smaller than given number) and decimals\\n    (leftover part always smaller than 1).\\n\\n    Return the decimal part of the number.\\n    >>> truncate_number(3.5)\\n    0.5\\n    x'",
+          "killed": false,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_9",
+          "type": "constant_replacement",
+          "original": "' Given a positive floating point number, it can be decomposed into\\n    and integer part (largest integer smaller than given number) and decimals\\n    (leftover part always smaller than 1).\\n\\n    Return the decimal part of the number.\\n    >>> truncate_number(3.5)\\n    0.5\\n    '",
+          "mutated": "' Given a positive floating point number, it can be decomposed into\\n    and integer part (largest integer smaller than given number) and decimals\\n    (leftover part always smaller than 1).\\n\\n    Return the decimal part of the number.\\n    >>> truncate_number(3.5)\\n    0.5\\n    x'",
+          "killed": false,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_10",
+          "type": "arithmetic_operator",
+          "original": "number - int(number)",
+          "mutated": "number + int(number)",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_11",
+          "type": "return_value_mutation",
+          "original": "return number - int(number)",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_12",
+          "type": "return_value_mutation",
+          "original": "return number - int(number)",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_13",
+          "type": "return_value_mutation",
+          "original": "return number - int(number)",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": true
+        },
+        {
+          "id": "mutant_14",
+          "type": "statement_deletion",
+          "original": "return number - int(number)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        }
+      ],
+      "elapsed_seconds": 7.190576076507568,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/3",
+      "entry_point": "below_zero",
+      "complexity": 3,
+      "num_methods_found": 1,
+      "trust_score": 0.23,
+      "status": "rejected",
+      "mutation_score": 1.0,
+      "mutants_killed": 15,
+      "mutants_total": 15,
+      "num_assertions": 4,
+      "weaknesses": [],
+      "ground_truth_asserts": 6,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 9,
+      "gt_misses_seeded_faults": 1,
+      "killed_by_operator": {
+        "relational_operator": 5,
+        "return_value_mutation": 6,
+        "statement_deletion": 2,
+        "constant_replacement": 2
+      },
+      "survived_by_operator": {},
+      "llm_raw_response": "{\n  \"assertions\": [\n    {\n      \"code\": \"assert isinstance(result, bool)\",\n      \"explanation\": \"The function should return a boolean value indicating whether the account balance falls below zero.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert below_zero([1, 2, 3]) == False\",\n      \"explanation\": \"Test case with positive operations only, balance should never fall below zero.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert below_zero([1, 2, -4, 5]) == True\",\n      \"explanation\": \"Test case with a withdrawal that causes the balance to fall below zero.\",\n      \"confidence\": 1.0,\n      \"type\": \"value\"\n    },\n    {\n      \"code\": \"assert below_zero([]) == False\",\n      \"explanation\": \"Test case with an empty list of operations, balance should remain at zero.\",\n      \"confidence\": 1.0,\n      \"type\": \"boundary\"\n    }\n  ]\n}",
+      "llm_assertions": [
+        {
+          "code": "assert isinstance(result, bool)",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "The function should return a boolean value indicating whether the account balance falls below zero."
+        },
+        {
+          "code": "assert below_zero([1, 2, 3]) == False",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "Test case with positive operations only, balance should never fall below zero."
+        },
+        {
+          "code": "assert below_zero([1, 2, -4, 5]) == True",
+          "confidence": 1.0,
+          "type": "value",
+          "explanation": "Test case with a withdrawal that causes the balance to fall below zero."
+        },
+        {
+          "code": "assert below_zero([]) == False",
+          "confidence": 1.0,
+          "type": "boundary",
+          "explanation": "Test case with an empty list of operations, balance should remain at zero."
+        }
+      ],
+      "generated_test_code": "from humaneval_3 import *\nimport unittest\nfrom unittest.mock import Mock, patch\nfrom typing import *\n\ndef test_below_zero_0():\n    # Setup\n    arg_operations = 6\n\n    # Execute\n    result = below_zero(arg_operations)\n\n    # Assert\n    assert isinstance(result, bool)  # The function should return a boolean value indicating whether the account balance falls below zero.\n    assert below_zero([1, 2, 3]) == False  # Test case with positive operations only, balance should never fall below zero.\n    assert below_zero([1, 2, -4, 5]) == True  # Test case with a withdrawal that causes the balance to fall below zero.\n    assert below_zero([]) == False  # Test case with an empty list of operations, balance should remain at zero.",
+      "mutant_details": [
+        {
+          "id": "mutant_0",
+          "type": "relational_operator",
+          "original": "account < 0",
+          "mutated": "account > 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_1",
+          "type": "return_value_mutation",
+          "original": "return True",
+          "mutated": "return ''",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_2",
+          "type": "relational_operator",
+          "original": "account < 0",
+          "mutated": "account > 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_3",
+          "type": "return_value_mutation",
+          "original": "return True",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_4",
+          "type": "statement_deletion",
+          "original": "return False",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_5",
+          "type": "relational_operator",
+          "original": "account < 0",
+          "mutated": "account > 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_6",
+          "type": "constant_replacement",
+          "original": "0",
+          "mutated": "1",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_7",
+          "type": "relational_operator",
+          "original": "account < 0",
+          "mutated": "account > 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_8",
+          "type": "statement_deletion",
+          "original": "return False",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_9",
+          "type": "relational_operator",
+          "original": "account < 0",
+          "mutated": "account > 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_10",
+          "type": "return_value_mutation",
+          "original": "return True",
+          "mutated": "return ''",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_11",
+          "type": "return_value_mutation",
+          "original": "return True",
+          "mutated": "return ''",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_12",
+          "type": "return_value_mutation",
+          "original": "return False",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_13",
+          "type": "constant_replacement",
+          "original": "\" You're given a list of deposit and withdrawal operations on a bank account that starts with\\n    zero balance. Your task is to detect if at any point the balance of account fallls below zero, and\\n    at that point function should return True. Otherwise it should return False.\\n    >>> below_zero([1, 2, 3])\\n    False\\n    >>> below_zero([1, 2, -4, 5])\\n    True\\n    \"",
+          "mutated": "\" You're given a list of deposit and withdrawal operations on a bank account that starts with\\n    zero balance. Your task is to detect if at any point the balance of account fallls below zero, and\\n    at that point function should return True. Otherwise it should return False.\\n    >>> below_zero([1, 2, 3])\\n    False\\n    >>> below_zero([1, 2, -4, 5])\\n    True\\n    x\"",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_14",
+          "type": "return_value_mutation",
+          "original": "return True",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": false
+        }
+      ],
+      "elapsed_seconds": 8.980669975280762,
+      "error": null
+    },
+    {
+      "task_id": "HumanEval/4",
+      "entry_point": "mean_absolute_deviation",
+      "complexity": 1,
+      "num_methods_found": 1,
+      "trust_score": 0.2675,
+      "status": "rejected",
+      "mutation_score": 1.0,
+      "mutants_killed": 15,
+      "mutants_total": 15,
+      "num_assertions": 4,
+      "weaknesses": [],
+      "ground_truth_asserts": 3,
+      "og_catches_seeded_faults": 10,
+      "og_misses_seeded_faults": 0,
+      "gt_catches_seeded_faults": 7,
+      "gt_misses_seeded_faults": 3,
+      "killed_by_operator": {
+        "return_value_mutation": 4,
+        "constant_replacement": 4,
+        "statement_deletion": 5,
+        "arithmetic_operator": 2
+      },
+      "survived_by_operator": {},
+      "llm_raw_response": "{\n  \"assertions\": [\n    {\n      \"code\": \"assert isinstance(result, float)\",\n      \"explanation\": \"The function should return a float value as per the function signature and documentation.\",\n      \"confidence\": 1.0,\n      \"type\": \"type\"\n    },\n    {\n      \"code\": \"assert result >= 0.0\",\n      \"explanation\": \"Mean Absolute Deviation cannot be negative since it is calculated using absolute differences.\",\n      \"confidence\": 1.0,\n      \"type\": \"property\"\n    },\n    {\n      \"code\": \"assert math.isnan(result) if not numbers else True\",\n      \"explanation\": \"If the input list is empty, the function should return NaN (Not a Number) as division by zero is undefined.\",\n      \"confidence\": 0.9,\n      \"type\": \"exception\"\n    },\n    {\n      \"code\": \"assert result == 0.0 if len(set(numbers)) == 1 else True\",\n      \"explanation\": \"If all numbers in the list are the same, the Mean Absolute Deviation should be zero.\",\n      \"confidence\": 1.0,\n      \"type\": \"property\"\n    }\n  ]\n}",
+      "llm_assertions": [
+        {
+          "code": "assert isinstance(result, float)",
+          "confidence": 1.0,
+          "type": "type",
+          "explanation": "The function should return a float value as per the function signature and documentation."
+        },
+        {
+          "code": "assert result >= 0.0",
+          "confidence": 1.0,
+          "type": "property",
+          "explanation": "Mean Absolute Deviation cannot be negative since it is calculated using absolute differences."
+        },
+        {
+          "code": "assert math.isnan(result) if not numbers else True",
+          "confidence": 0.9,
+          "type": "exception",
+          "explanation": "If the input list is empty, the function should return NaN (Not a Number) as division by zero is undefined."
+        },
+        {
+          "code": "assert result == 0.0 if len(set(numbers)) == 1 else True",
+          "confidence": 1.0,
+          "type": "property",
+          "explanation": "If all numbers in the list are the same, the Mean Absolute Deviation should be zero."
+        }
+      ],
+      "generated_test_code": "from humaneval_4 import *\nimport unittest\nfrom unittest.mock import Mock, patch\nfrom typing import *\n\ndef test_mean_absolute_deviation_0():\n    # Setup\n    arg_numbers = 31.6\n\n    # Execute\n    result = mean_absolute_deviation(arg_numbers)\n\n    # Assert\n    assert isinstance(result, float)  # The function should return a float value as per the function signature and documentation.\n    assert result >= 0.0  # Mean Absolute Deviation cannot be negative since it is calculated using absolute differences.\n    assert math.isnan(result) if not numbers else True  # If the input list is empty, the function should return NaN (Not a Number) as division by zero is undefined.\n    assert result == 0.0 if len(set(numbers)) == 1 else True  # If all numbers in the list are the same, the Mean Absolute Deviation should be zero.",
+      "mutant_details": [
+        {
+          "id": "mutant_0",
+          "type": "return_value_mutation",
+          "original": "return sum((abs(x - mean) for x in numbers)) / len(numbers)",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_1",
+          "type": "constant_replacement",
+          "original": "' For a given list of input numbers, calculate Mean Absolute Deviation\\n    around the mean of this dataset.\\n    Mean Absolute Deviation is the average absolute difference between each\\n    element and a centerpoint (mean in this case):\\n    MAD = average | x - x_mean |\\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\\n    1.0\\n    '",
+          "mutated": "' For a given list of input numbers, calculate Mean Absolute Deviation\\n    around the mean of this dataset.\\n    Mean Absolute Deviation is the average absolute difference between each\\n    element and a centerpoint (mean in this case):\\n    MAD = average | x - x_mean |\\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\\n    1.0\\n    x'",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_2",
+          "type": "statement_deletion",
+          "original": "mean = sum(numbers) / len(numbers)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_3",
+          "type": "return_value_mutation",
+          "original": "return sum((abs(x - mean) for x in numbers)) / len(numbers)",
+          "mutated": "return 0",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_4",
+          "type": "statement_deletion",
+          "original": "return sum((abs(x - mean) for x in numbers)) / len(numbers)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_5",
+          "type": "return_value_mutation",
+          "original": "return sum((abs(x - mean) for x in numbers)) / len(numbers)",
+          "mutated": "return None",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_6",
+          "type": "statement_deletion",
+          "original": "mean = sum(numbers) / len(numbers)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_7",
+          "type": "statement_deletion",
+          "original": "return sum((abs(x - mean) for x in numbers)) / len(numbers)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_8",
+          "type": "arithmetic_operator",
+          "original": "sum(numbers) / len(numbers)",
+          "mutated": "sum(numbers) * len(numbers)",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_9",
+          "type": "constant_replacement",
+          "original": "' For a given list of input numbers, calculate Mean Absolute Deviation\\n    around the mean of this dataset.\\n    Mean Absolute Deviation is the average absolute difference between each\\n    element and a centerpoint (mean in this case):\\n    MAD = average | x - x_mean |\\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\\n    1.0\\n    '",
+          "mutated": "' For a given list of input numbers, calculate Mean Absolute Deviation\\n    around the mean of this dataset.\\n    Mean Absolute Deviation is the average absolute difference between each\\n    element and a centerpoint (mean in this case):\\n    MAD = average | x - x_mean |\\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\\n    1.0\\n    x'",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_10",
+          "type": "return_value_mutation",
+          "original": "return sum((abs(x - mean) for x in numbers)) / len(numbers)",
+          "mutated": "return ''",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_11",
+          "type": "arithmetic_operator",
+          "original": "sum((abs(x - mean) for x in numbers)) / len(numbers)",
+          "mutated": "sum((abs(x - mean) for x in numbers)) * len(numbers)",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_12",
+          "type": "constant_replacement",
+          "original": "' For a given list of input numbers, calculate Mean Absolute Deviation\\n    around the mean of this dataset.\\n    Mean Absolute Deviation is the average absolute difference between each\\n    element and a centerpoint (mean in this case):\\n    MAD = average | x - x_mean |\\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\\n    1.0\\n    '",
+          "mutated": "' For a given list of input numbers, calculate Mean Absolute Deviation\\n    around the mean of this dataset.\\n    Mean Absolute Deviation is the average absolute difference between each\\n    element and a centerpoint (mean in this case):\\n    MAD = average | x - x_mean |\\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\\n    1.0\\n    x'",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_13",
+          "type": "statement_deletion",
+          "original": "mean = sum(numbers) / len(numbers)",
+          "mutated": "pass",
+          "killed": true,
+          "oracle_killed": false
+        },
+        {
+          "id": "mutant_14",
+          "type": "constant_replacement",
+          "original": "' For a given list of input numbers, calculate Mean Absolute Deviation\\n    around the mean of this dataset.\\n    Mean Absolute Deviation is the average absolute difference between each\\n    element and a centerpoint (mean in this case):\\n    MAD = average | x - x_mean |\\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\\n    1.0\\n    '",
+          "mutated": "' For a given list of input numbers, calculate Mean Absolute Deviation\\n    around the mean of this dataset.\\n    Mean Absolute Deviation is the average absolute difference between each\\n    element and a centerpoint (mean in this case):\\n    MAD = average | x - x_mean |\\n    >>> mean_absolute_deviation([1.0, 2.0, 3.0, 4.0])\\n    1.0\\n    x'",
+          "killed": true,
+          "oracle_killed": false
+        }
+      ],
+      "elapsed_seconds": 57.16424608230591,
+      "error": null
+    }
+  ]
+}
